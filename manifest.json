@@ -12,12 +12,24 @@
   "action": {
     "default_title": "Search Bookmarks & History"
   },
+  "options_page": "options.html",
   "permissions": [
     "bookmarks",
     "history",
     "activeTab",
-    "scripting"
+    "scripting",
+    "tabs",
+    "storage"
   ],
+  "commands": {
+    "open-search": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+K",
+        "mac": "Command+Shift+K"
+      },
+      "description": "Open search modal"
+    }
+  },
   "background": {
     "service_worker": "background.js"
   },
