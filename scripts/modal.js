@@ -36,12 +36,6 @@ class SearchModal {
         this.modal.className = 'modal-overlay';
         this.modal.innerHTML = `
             <div class="modal-container">
-                <div class="modal-header">
-                    <h3>Quick Search</h3>
-                    <div class="header-actions">
-                        <button id="settingsBtn" class="settings-btn" title="设置">⚙️</button>
-                    </div>
-                </div>
                 <div class="modal-body">
                     <div class="search-section">
                         <div class="input-group">
@@ -81,6 +75,9 @@ class SearchModal {
                 
                 <div class="modal-footer">
                     <small id="resultsInfo">显示最近12条匹配结果</small>
+                    <div class="footer-actions">
+                        <button id="settingsBtn" class="settings-btn" title="设置">⚙️</button>
+                    </div>
                 </div>
             </div>
         `;
@@ -154,47 +151,53 @@ class SearchModal {
                 transform: scale(0.95);
             }
 
-            /* 模态框头部 */
-            .modal-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 20px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border-radius: 12px 12px 0 0;
-            }
-
-            .modal-header h3 {
-                margin: 0;
-                font-size: 1.5rem;
-                font-weight: 600;
-            }
-
-            .header-actions {
+            /* 底部布局与设置按钮样式（统一风格） */
+            .modal-footer {
+                background: #f8f9fa;
+                padding: 12px 20px;
+                border-top: 1px solid #e9ecef;
                 display: flex;
                 align-items: center;
-                gap: 10px;
+                justify-content: center; /* 居中文案 */
+                position: relative; /* 让右侧按钮绝对定位 */
+                gap: 12px;
+            }
+
+            .modal-footer small {
+                color: #6c757d;
+                font-size: 12px;
+                text-align: center;
+            }
+
+            .footer-actions {
+                position: absolute;
+                right: 20px;
+                top: 50%;
+                transform: translateY(-50%);
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
 
             .settings-btn {
-                background: rgba(255, 255, 255, 0.2);
-                border: none;
-                color: white;
-                padding: 8px 12px;
-                border-radius: 6px;
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
+                color: #4f46e5;
+                padding: 6px 10px;
+                border-radius: 8px;
                 cursor: pointer;
-                font-size: 16px;
+                font-size: 14px;
                 transition: all 0.2s ease;
             }
 
             .settings-btn:hover {
-                background: rgba(255, 255, 255, 0.3);
-                transform: scale(1.05);
+                background: #f1f5f9;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
             }
 
             .settings-btn:active {
-                transform: scale(0.95);
+                transform: translateY(0);
             }
 
             /* 模态框主体 */

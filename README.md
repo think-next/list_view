@@ -143,3 +143,34 @@ quick_browser/
 ## 许可证
 
 MIT License - 详见 LICENSE 文件
+
+## 图标生成（强调 soso 的“快”）
+
+项目提供了两款 SVG 图标，体现“快速搜索”的主题：
+
+- `images/soso-min.svg`：极简风格，S 形+疾速拖尾，适合小尺寸
+- `images/soso-detailed.svg`：速度环、放大镜与闪电 S，更具细节
+
+使用 Node 脚本可一键生成 `16/32/48/128` 四种 PNG 图标，覆盖 `manifest.json` 中的声明尺寸。
+
+### 生成步骤
+
+1. 安装依赖（建议 Node 18+）：
+
+```bash
+pnpm i || npm i || yarn
+```
+
+2. 生成极简风格（推荐用于小尺寸）：
+
+```bash
+npm run build:icons
+```
+
+3. 或生成细节风格：
+
+```bash
+npm run build:icons:detailed
+```
+
+脚本会覆盖 `images/icon-16.png`、`images/icon-32.png`、`images/icon-48.png`、`images/icon-128.png`。无需改动 `manifest.json` 的 `icons` 映射。

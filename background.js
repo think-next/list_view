@@ -66,8 +66,8 @@ async function injectContentScript(tabId) {
 
 // 监听键盘快捷键命令
 chrome.commands.onCommand.addListener((command) => {
-    if (command === 'open-search') {
-        console.log('快捷键 CMD+O 被触发');
+    if (command === '_execute_action') {
+        console.log('快捷键 Ctrl+Shift+K (Windows/Linux) 或 Command+Shift+K (Mac) 被触发');
         handleShortcutTrigger();
     }
 });
