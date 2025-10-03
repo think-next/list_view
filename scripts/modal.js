@@ -74,8 +74,9 @@ class SearchModal {
                 </div>
                 
                 <div class="modal-footer">
-                    <small id="resultsInfo">显示最近12条匹配结果</small>
-                    <div class="footer-actions">
+                    <div class="footer-center">
+                        <small id="resultsInfo">显示最近12条匹配结果</small>
+                        <span class="footer-separator">|</span>
                         <button id="settingsBtn" class="settings-btn" title="设置">⚙️</button>
                     </div>
                 </div>
@@ -158,36 +159,39 @@ class SearchModal {
                 border-top: 1px solid #e9ecef;
                 display: flex;
                 align-items: center;
-                justify-content: center; /* 居中文案 */
-                position: relative; /* 让右侧按钮绝对定位 */
-                gap: 12px;
+                justify-content: center;
+            }
+
+            .footer-center {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                max-width: 100%;
             }
 
             .modal-footer small {
                 color: #6c757d;
                 font-size: 12px;
                 text-align: center;
+                white-space: nowrap;
             }
 
-            .footer-actions {
-                position: absolute;
-                right: 20px;
-                top: 50%;
-                transform: translateY(-50%);
-                display: flex;
-                align-items: center;
-                gap: 8px;
+            .footer-separator {
+                color: #cbd5e1;
+                user-select: none;
             }
 
             .settings-btn {
                 background: #ffffff;
                 border: 1px solid #e2e8f0;
                 color: #4f46e5;
-                padding: 6px 10px;
-                border-radius: 8px;
+                padding: 6px 12px;
+                border-radius: 10px;
                 cursor: pointer;
-                font-size: 14px;
+                font-size: 12px;
+                font-weight: 600;
                 transition: all 0.2s ease;
+                line-height: 1;
             }
 
             .settings-btn:hover {
