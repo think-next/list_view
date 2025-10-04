@@ -185,13 +185,18 @@ class SearchModal {
                 background: #ffffff;
                 border: 1px solid #e2e8f0;
                 color: #4f46e5;
-                padding: 6px 12px;
-                border-radius: 10px;
+                padding: 8px;
+                border-radius: 50%;
                 cursor: pointer;
-                font-size: 12px;
+                font-size: 14px;
                 font-weight: 600;
                 transition: all 0.2s ease;
                 line-height: 1;
+                width: 32px;
+                height: 32px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
 
             .settings-btn:hover {
@@ -390,6 +395,52 @@ class SearchModal {
                 margin: 0;
                 font-size: 14px;
                 font-weight: 600;
+            }
+
+            .window-title {
+                cursor: pointer;
+                position: relative;
+                padding: 4px 8px;
+                border-radius: 6px;
+                transition: all 0.2s ease;
+                border: 1px solid transparent;
+            }
+
+            .window-title:hover {
+                background: rgba(255, 255, 255, 0.1);
+                border-color: rgba(255, 255, 255, 0.2);
+                transform: translateY(-1px);
+            }
+
+            .window-title::after {
+                content: '✏️';
+                opacity: 0.6;
+                margin-left: 6px;
+                font-size: 10px;
+                transition: opacity 0.2s ease;
+            }
+
+            .window-title:hover::after {
+                opacity: 0.9;
+            }
+
+            .window-name-input {
+                background: rgba(255, 255, 255, 0.9);
+                border: 2px solid #667eea;
+                border-radius: 6px;
+                padding: 4px 8px;
+                font-size: 14px;
+                font-weight: 600;
+                color: #333;
+                outline: none;
+                width: 100%;
+                max-width: 200px;
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+            }
+
+            .window-name-input:focus {
+                border-color: #4f46e5;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
             }
 
             .tab-count {
@@ -1855,10 +1906,13 @@ class SearchModal {
                 `;
             }).join('');
 
+            // 使用保存的窗口名称，如果没有则使用默认名称
+            const displayName = this.getWindowName(group.windowId, group.windowTitle);
+
             return `
                 <div class="window-group">
                     <div class="window-header">
-                        <h4>${this.escapeHtml(group.windowTitle)}</h4>
+                        <h4 class="window-title" data-window-id="${group.windowId}" title="点击编辑窗口名称">${this.escapeHtml(displayName)}</h4>
                         <span class="tab-count">${group.tabs.length} 个标签页</span>
                     </div>
                     <div class="tabs-list">
@@ -1874,6 +1928,14 @@ class SearchModal {
         if (aiDetection) {
             resultsContainer.insertBefore(aiDetection, resultsContainer.firstChild);
         }
+
+        // 添加窗口名称编辑事件
+        this.modal.querySelectorAll('.window-title').forEach(titleElement => {
+            titleElement.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.editWindowName(titleElement);
+            });
+        });
 
         // 添加点击事件
         this.modal.querySelectorAll('.tab-item').forEach(item => {
@@ -2815,6 +2877,78 @@ class SearchModal {
                 <p>❌ ${message}</p>
             </div>
         `;
+    }
+
+    // 编辑窗口名称
+    editWindowName(titleElement) {
+        const windowId = titleElement.dataset.windowId;
+        const currentName = titleElement.textContent;
+
+        // 创建输入框
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentName;
+        input.className = 'window-name-input';
+        input.maxLength = 20;
+
+        // 替换标题元素
+        titleElement.style.display = 'none';
+        titleElement.parentNode.insertBefore(input, titleElement);
+
+        // 聚焦并选中文本
+        input.focus();
+        input.select();
+
+        // 保存函数
+        const saveName = () => {
+            const newName = input.value.trim() || currentName;
+            titleElement.textContent = newName;
+            titleElement.style.display = 'block';
+            input.remove();
+
+            // 保存到localStorage
+            this.saveWindowName(windowId, newName);
+        };
+
+        // 取消函数
+        const cancelEdit = () => {
+            titleElement.style.display = 'block';
+            input.remove();
+        };
+
+        // 绑定事件
+        input.addEventListener('blur', saveName);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveName();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelEdit();
+            }
+        });
+    }
+
+    // 保存窗口名称到localStorage
+    saveWindowName(windowId, name) {
+        try {
+            const savedNames = JSON.parse(localStorage.getItem('windowNames') || '{}');
+            savedNames[windowId] = name;
+            localStorage.setItem('windowNames', JSON.stringify(savedNames));
+        } catch (error) {
+            console.error('保存窗口名称失败:', error);
+        }
+    }
+
+    // 获取保存的窗口名称
+    getWindowName(windowId, defaultName) {
+        try {
+            const savedNames = JSON.parse(localStorage.getItem('windowNames') || '{}');
+            return savedNames[windowId] || defaultName;
+        } catch (error) {
+            console.error('获取窗口名称失败:', error);
+            return defaultName;
+        }
     }
 
     // 显示下载提示
