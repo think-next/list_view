@@ -73,13 +73,6 @@ class SearchModal {
                     </div>
                 </div>
                 
-                <div class="modal-footer">
-                    <div class="footer-center">
-                        <small id="resultsInfo">显示最近12条匹配结果</small>
-                        <span class="footer-separator">|</span>
-                        <button id="settingsBtn" class="settings-btn" title="设置">⚙️</button>
-                    </div>
-                </div>
             </div>
         `;
 
@@ -152,62 +145,9 @@ class SearchModal {
                 transform: scale(0.95);
             }
 
-            /* 底部布局与设置按钮样式（统一风格） */
-            .modal-footer {
-                background: #f8f9fa;
-                padding: 12px 20px;
-                border-top: 1px solid #e9ecef;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
 
-            .footer-center {
-                display: inline-flex;
-                align-items: center;
-                gap: 10px;
-                max-width: 100%;
-            }
 
-            .modal-footer small {
-                color: #6c757d;
-                font-size: 12px;
-                text-align: center;
-                white-space: nowrap;
-            }
 
-            .footer-separator {
-                color: #cbd5e1;
-                user-select: none;
-            }
-
-            .settings-btn {
-                background: #ffffff;
-                border: 1px solid #e2e8f0;
-                color: #4f46e5;
-                padding: 8px;
-                border-radius: 50%;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: 600;
-                transition: all 0.2s ease;
-                line-height: 1;
-                width: 32px;
-                height: 32px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .settings-btn:hover {
-                background: #f1f5f9;
-                transform: translateY(-1px);
-                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
-            }
-
-            .settings-btn:active {
-                transform: translateY(0);
-            }
 
             /* 模态框主体 */
             .modal-body {
@@ -219,8 +159,8 @@ class SearchModal {
 
             .search-section {
                 padding: 20px;
-                background: #f8f9fa;
-                border-bottom: 1px solid #e9ecef;
+                background: #f8fafc;
+                border-bottom: 1px solid #e2e8f0;
                 flex-shrink: 0;
             }
 
@@ -241,7 +181,7 @@ class SearchModal {
                 display: flex;
                 align-items: stretch;
                 background: white;
-                border: 2px solid #e9ecef;
+                border: 2px solid #e2e8f0;
                 border-radius: 12px;
                 overflow: hidden;
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -263,7 +203,7 @@ class SearchModal {
             }
 
             .input-row:focus-within {
-                border-color: #667eea;
+                border-color: #2563eb;
                 box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1), 0 4px 12px rgba(0, 0, 0, 0.1);
                 transform: translateY(-1px);
             }
@@ -273,7 +213,7 @@ class SearchModal {
             }
 
             .filter-tag {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #f1f8ff;
                 color: white;
                 padding: 12px 16px;
                 font-size: 13px;
@@ -300,7 +240,7 @@ class SearchModal {
             }
 
             .filter-tag:hover {
-                background: linear-gradient(135deg, #5a6fd8 0%, #6a4c93 100%);
+                background: #f1f8ff;
                 transform: translateX(2px);
             }
 
@@ -314,7 +254,7 @@ class SearchModal {
                 left: 0;
                 right: 0;
                 background: white;
-                border: 1px solid #e9ecef;
+                border: 1px solid #e2e8f0;
                 border-radius: 12px;
                 box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
                 z-index: 1000001;
@@ -328,7 +268,7 @@ class SearchModal {
                 padding: 12px 20px;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                border-bottom: 1px solid #f1f3f4;
+                border-bottom: 1px solid #f1f5f9;
                 display: flex;
                 align-items: center;
                 gap: 8px;
@@ -341,12 +281,12 @@ class SearchModal {
             }
 
             .filter-option:hover {
-                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                background: #f8fafc;
                 transform: translateX(4px);
             }
 
             .filter-option.selected {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #f1f8ff;
                 color: white;
                 transform: translateX(4px);
                 box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
@@ -376,20 +316,71 @@ class SearchModal {
             /* 窗口分组样式 */
             .window-group {
                 margin-bottom: 20px;
-                background: #f8f9fa;
+                background: #f1f5f9;
                 border-radius: 12px;
                 overflow: hidden;
-                border: 1px solid #e9ecef;
+                border: 1px solid #e2e8f0;
             }
 
             .window-header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
+                background: #dbeafe;
+                color: #475569;
                 padding: 12px 16px;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
             }
+
+            .window-title-container {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex: 1;
+            }
+
+            .window-title {
+                cursor: pointer;
+                position: relative;
+                padding: 4px 8px;
+                border-radius: 6px;
+                transition: all 0.2s ease;
+                border: 1px solid transparent;
+            }
+
+            .window-menu-btn {
+                background: #2563eb;
+                border: 1px solid #2563eb;
+                color: white;
+                padding: 6px 12px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 11px;
+                font-weight: 600;
+                transition: all 0.2s ease;
+                opacity: 0.9;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 50px;
+                height: 28px;
+                position: relative;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+
+            .window-menu-btn:hover {
+                background: #1d4ed8;
+                border-color: #1d4ed8;
+                opacity: 1;
+                transform: translateY(-1px);
+                box-shadow: 0 3px 8px rgba(30, 64, 175, 0.3);
+            }
+
+            .window-menu-btn:active {
+                transform: translateY(0);
+                background: #1e3a8a;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            }
+
 
             .window-header h4 {
                 margin: 0;
@@ -418,6 +409,18 @@ class SearchModal {
                 margin-left: 6px;
                 font-size: 10px;
                 transition: opacity 0.2s ease;
+                position: relative;
+            }
+
+            .window-title.has-menu::before {
+                content: '';
+                position: absolute;
+                right: -6px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 1px;
+                height: 16px;
+                background: #2563eb;
             }
 
             .window-title:hover::after {
@@ -426,12 +429,12 @@ class SearchModal {
 
             .window-name-input {
                 background: rgba(255, 255, 255, 0.9);
-                border: 2px solid #667eea;
+                border: 2px solid #2563eb;
                 border-radius: 6px;
                 padding: 4px 8px;
                 font-size: 14px;
                 font-weight: 600;
-                color: #333;
+                color: #475569;
                 outline: none;
                 width: 100%;
                 max-width: 200px;
@@ -439,8 +442,62 @@ class SearchModal {
             }
 
             .window-name-input:focus {
-                border-color: #4f46e5;
+                border-color: #2563eb;
                 box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            }
+
+            /* 窗口菜单样式 */
+            .window-menu {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+                overflow: hidden;
+                backdrop-filter: blur(10px);
+                min-width: 200px;
+            }
+
+            .window-menu-header {
+                background: #dbeafe;
+                color: #2563eb;
+                padding: 8px 12px;
+                font-size: 12px;
+                font-weight: 600;
+                text-align: center;
+            }
+
+            .window-menu-items {
+                padding: 4px 0;
+            }
+
+            .window-menu-item {
+                display: flex;
+                align-items: center;
+                padding: 8px 12px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border-bottom: 1px solid #f1f5f9;
+                gap: 8px;
+            }
+
+            .window-menu-item:last-child {
+                border-bottom: none;
+            }
+
+            .window-menu-item:hover {
+                background: #f1f5f9;
+                transform: translateX(4px);
+            }
+
+            .menu-icon {
+                font-size: 14px;
+                opacity: 0.7;
+            }
+
+            .menu-text {
+                font-size: 13px;
+                color: #495057;
+                font-weight: 500;
             }
 
             .tab-count {
@@ -460,35 +517,26 @@ class SearchModal {
 
             .tab-item {
                 background: white;
-                border: 1px solid #e9ecef;
+                border: 1px solid #e2e8f0;
                 border-radius: 8px;
                 transition: all 0.2s ease;
             }
 
             .tab-item:hover {
-                border-color: #667eea;
+                border-color: #2563eb;
                 transform: translateY(-1px);
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             }
 
             .tab-item.active {
                 border-color: #28a745;
-                background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+                background: #dcfce7;
             }
 
             .tab-item.pinned {
                 border-left: 4px solid #ffc107;
             }
 
-            .active-indicator {
-                background: #28a745;
-                color: white;
-                padding: 2px 6px;
-                border-radius: 10px;
-                font-size: 10px;
-                font-weight: 600;
-                margin-left: 8px;
-            }
 
             .pinned-indicator {
                 margin-left: 4px;
@@ -539,7 +587,7 @@ class SearchModal {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 min-width: 0;
                 background: transparent;
-                color: #333;
+                color: #475569;
             }
 
             #searchInput::placeholder {
@@ -553,8 +601,8 @@ class SearchModal {
 
             #searchBtn {
                 padding: 12px 20px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
+                background: #dbeafe;
+                color: #2563eb;
                 border: none;
                 border-radius: 10px;
                 font-size: 14px;
@@ -586,15 +634,15 @@ class SearchModal {
                 justify-content: center;
                 gap: 10px;
                 padding: 20px;
-                color: #667eea;
+                color: #2563eb;
                 font-weight: 500;
             }
 
             .spinner {
                 width: 20px;
                 height: 20px;
-                border: 2px solid #e9ecef;
-                border-top: 2px solid #667eea;
+                border: 2px solid #e2e8f0;
+                border-top: 2px solid #2563eb;
                 border-radius: 50%;
                 animation: spin 1s linear infinite;
             }
@@ -624,8 +672,8 @@ class SearchModal {
             }
 
             .result-item {
-                background: #f8f9fa;
-                border: 1px solid #e9ecef;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
                 border-radius: 10px;
                 padding: 12px;
                 transition: all 0.2s ease;
@@ -633,15 +681,15 @@ class SearchModal {
             }
 
             .result-item:hover {
-                background: #e9ecef;
-                border-color: #667eea;
+                background: #e2e8f0;
+                border-color: #2563eb;
                 transform: translateY(-2px);
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             }
 
             .result-item.selected {
-                background: #667eea;
-                border-color: #667eea;
+                background: #2563eb;
+                border-color: #2563eb;
                 color: white;
                 transform: translateY(-2px);
                 box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
@@ -677,7 +725,7 @@ class SearchModal {
             .result-title {
                 font-size: 14px;
                 font-weight: 600;
-                color: #333;
+                color: #475569;
                 line-height: 1.3;
                 display: -webkit-box;
                 -webkit-line-clamp: 1;
@@ -689,7 +737,7 @@ class SearchModal {
 
             .result-url {
                 font-size: 12px;
-                color: #667eea;
+                color: #2563eb;
                 word-break: break-all;
                 white-space: nowrap;
                 overflow: hidden;
@@ -697,7 +745,7 @@ class SearchModal {
             }
 
             .result-type {
-                background: #667eea;
+                background: #2563eb;
                 color: white;
                 padding: 2px 6px;
                 border-radius: 4px;
@@ -727,10 +775,10 @@ class SearchModal {
 
             /* 模态框页脚 */
             .modal-footer {
-                background: #f8f9fa;
+                background: #f8fafc;
                 padding: 12px 20px;
                 text-align: center;
-                border-top: 1px solid #e9ecef;
+                border-top: 1px solid #e2e8f0;
                 flex-shrink: 0;
                 border-radius: 0 0 16px 16px;
             }
@@ -742,7 +790,7 @@ class SearchModal {
 
             /* AI推荐样式 */
             .ai-recommendations {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #f1f8ff;
                 border-radius: 12px;
                 margin-bottom: 20px;
                 overflow: hidden;
@@ -803,7 +851,7 @@ class SearchModal {
             }
 
             .ai-result-item:hover {
-                background: #f8f9fa;
+                background: #f8fafc;
                 transform: translateX(4px);
             }
 
@@ -814,7 +862,7 @@ class SearchModal {
 
             .ai-result-title {
                 font-weight: 600;
-                color: #333;
+                color: #475569;
                 margin-bottom: 4px;
                 font-size: 14px;
                 line-height: 1.4;
@@ -837,7 +885,7 @@ class SearchModal {
             }
 
             .ai-result-badge {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #f1f8ff;
                 color: white;
                 padding: 4px 8px;
                 border-radius: 12px;
@@ -849,7 +897,7 @@ class SearchModal {
 
             /* AI下载样式 */
             .ai-download {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #f1f8ff;
                 border-radius: 16px;
                 overflow: hidden;
                 box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
@@ -934,7 +982,7 @@ class SearchModal {
 
             .ai-download-primary-btn {
                 flex: 1;
-                background: linear-gradient(135deg, #2ed573 0%, #26d065 100%);
+                background: #22c55e;
                 color: white;
                 border: none;
                 border-radius: 12px;
@@ -988,8 +1036,8 @@ class SearchModal {
 
             /* AI检测弹框样式 - 与搜索记录风格统一 */
             .ai-detection {
-                background: #f8f9fa;
-                border: 1px solid #e9ecef;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
                 border-radius: 10px;
                 padding: 12px;
                 margin-bottom: 0;
@@ -1005,7 +1053,7 @@ class SearchModal {
             .ai-detection-icon {
                 width: 32px;
                 height: 32px;
-                background: #667eea;
+                background: #2563eb;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
@@ -1016,7 +1064,7 @@ class SearchModal {
             }
 
             .ai-detection-title {
-                color: #333;
+                color: #475569;
                 font-size: 14px;
                 font-weight: 600;
                 margin: 0;
@@ -1032,7 +1080,7 @@ class SearchModal {
                 margin-bottom: 16px;
                 padding: 12px;
                 background: #ffffff;
-                border: 1px solid #e9ecef;
+                border: 1px solid #e2e8f0;
                 border-radius: 8px;
             }
 
@@ -1072,14 +1120,14 @@ class SearchModal {
             }
 
             .ai-btn-primary {
-                background: #667eea;
+                background: #2563eb;
                 color: white;
-                border-color: #667eea;
+                border-color: #2563eb;
             }
 
             .ai-btn-primary:hover {
-                background: #5a6fd8;
-                border-color: #5a6fd8;
+                background: #2563eb;
+                border-color: #2563eb;
                 transform: translateY(-1px);
                 box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
             }
@@ -1097,13 +1145,13 @@ class SearchModal {
             .ai-btn-secondary {
                 background: #ffffff;
                 color: #666;
-                border-color: #e9ecef;
+                border-color: #e2e8f0;
             }
 
             .ai-btn-secondary:hover {
-                background: #f8f9fa;
-                border-color: #667eea;
-                color: #667eea;
+                background: #f8fafc;
+                border-color: #2563eb;
+                color: #2563eb;
                 transform: translateY(-1px);
             }
 
@@ -1112,7 +1160,7 @@ class SearchModal {
             }
 
             .ai-downloading {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #f1f8ff;
                 position: relative;
                 overflow: hidden;
             }
@@ -1243,7 +1291,7 @@ class SearchModal {
 
             .ai-progress-fill {
                 height: 100%;
-                background: linear-gradient(90deg, #2ed573 0%, #26d065 100%);
+                background: #22c55e;
                 border-radius: 6px;
                 transition: width 0.5s ease;
                 position: relative;
@@ -1281,13 +1329,13 @@ class SearchModal {
             }
 
             .ai-error {
-                background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+                background: #fef2f2;
             }
 
             .ai-error-content {
                 padding: 16px 20px;
                 background: white;
-                color: #333;
+                color: #475569;
             }
 
             .ai-error-content p {
@@ -1303,7 +1351,7 @@ class SearchModal {
             }
 
             .ai-settings-btn, .ai-check-btn, .ai-permission-btn {
-                background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+                background: #fef2f2;
                 color: white;
                 border: none;
                 padding: 8px 16px;
@@ -1315,11 +1363,11 @@ class SearchModal {
             }
 
             .ai-check-btn {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #f1f8ff;
             }
 
             .ai-permission-btn {
-                background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+                background: #dcfce7;
             }
 
             .ai-settings-btn:hover, .ai-check-btn:hover, .ai-permission-btn:hover {
@@ -1330,7 +1378,7 @@ class SearchModal {
             /* 历史统计区域样式 */
             .history-stats-section {
                 padding: 20px;
-                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                background: #f8fafc;
                 border-bottom: 1px solid #dee2e6;
             }
 
@@ -1363,7 +1411,7 @@ class SearchModal {
                 border-radius: 12px;
                 padding: 16px;
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                border: 1px solid #e9ecef;
+                border: 1px solid #e2e8f0;
                 transition: all 0.3s ease;
             }
 
@@ -1378,7 +1426,7 @@ class SearchModal {
                 align-items: center;
                 margin-bottom: 12px;
                 padding-bottom: 8px;
-                border-bottom: 1px solid #e9ecef;
+                border-bottom: 1px solid #e2e8f0;
             }
 
             .domain-name {
@@ -1393,7 +1441,7 @@ class SearchModal {
             .domain-icon {
                 width: 16px;
                 height: 16px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #f1f8ff;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
@@ -1406,7 +1454,7 @@ class SearchModal {
             .domain-visits {
                 font-size: 12px;
                 color: #6c757d;
-                background: #f8f9fa;
+                background: #f8fafc;
                 padding: 4px 8px;
                 border-radius: 12px;
             }
@@ -1422,14 +1470,14 @@ class SearchModal {
                 justify-content: space-between;
                 align-items: center;
                 padding: 8px 12px;
-                background: #f8f9fa;
+                background: #f8fafc;
                 border-radius: 8px;
                 transition: all 0.2s ease;
                 cursor: pointer;
             }
 
             .path-item:hover {
-                background: #e9ecef;
+                background: #e2e8f0;
                 transform: translateX(4px);
             }
 
@@ -1451,7 +1499,7 @@ class SearchModal {
 
             .path-count {
                 font-size: 12px;
-                color: #667eea;
+                color: #2563eb;
                 font-weight: 600;
                 background: rgba(102, 126, 234, 0.1);
                 padding: 4px 8px;
@@ -1473,7 +1521,7 @@ class SearchModal {
                 justify-content: center;
                 gap: 10px;
                 padding: 20px;
-                color: #667eea;
+                color: #2563eb;
             }
 
             /* 滚动条样式 */
@@ -1578,8 +1626,8 @@ class SearchModal {
                     e.preventDefault();
                     this.selectCurrentFilterOption();
                 }
-            } else if (this.results.length > 0) {
-                // 搜索结果导航
+            } else if (this.results.length > 0 || this.windowGroups) {
+                // 搜索结果导航（包括list tab视图）
                 if (e.key === 'ArrowDown' || e.key === 'Tab') {
                     e.preventDefault();
                     this.navigateResults(1);
@@ -1593,16 +1641,6 @@ class SearchModal {
             }
         });
 
-        // 设置按钮事件
-        const settingsBtn = this.modal.querySelector('#settingsBtn');
-        if (settingsBtn) {
-            settingsBtn.addEventListener('click', () => {
-                // 通过消息传递到background script打开选项页面
-                chrome.runtime.sendMessage({
-                    action: 'openOptionsPage'
-                });
-            });
-        }
 
         // 搜索功能
         this.bindSearchEvents();
@@ -1672,8 +1710,8 @@ class SearchModal {
         // 预加载AI开关配置（不阻塞UI）
         this.checkAIEnabled().catch(() => { });
 
-        // 显示历史统计
-        this.loadHistoryStats();
+        // 默认显示list tab内容，但保持搜索框为默认状态
+        this.loadAllTabs();
 
         // 聚焦到输入框
         setTimeout(() => {
@@ -1724,9 +1762,6 @@ class SearchModal {
             });
 
             if (response.success) {
-                // 更新结果信息显示
-                this.updateResultsInfo(response.maxResults || 12);
-
                 if (response.isGrouped) {
                     this.displayGroupedResults(response.results);
                 } else {
@@ -1805,24 +1840,13 @@ class SearchModal {
 
         loadingIndicator.style.display = 'none';
 
-        // 显示历史统计区域
+        // 隐藏历史统计区域
         if (historyStatsSection) {
-            historyStatsSection.style.display = 'block';
+            historyStatsSection.style.display = 'none';
         }
 
-        // 保存AI推荐模块（如果存在）
-        const aiDetection = resultsContainer.querySelector('.ai-detection');
-
-        resultsContainer.innerHTML = `
-            <div class="welcome-message">
-                <p>输入关键词开始搜索您的书签和浏览历史</p>
-            </div>
-        `;
-
-        // 如果有AI推荐模块，重新插入到最前面
-        if (aiDetection) {
-            resultsContainer.insertBefore(aiDetection, resultsContainer.firstChild);
-        }
+        // 显示list tab内容（与插件启动时相同）
+        this.loadAllTabs();
     }
 
     // 显示错误信息
@@ -1894,7 +1918,6 @@ class SearchModal {
                             <div class="result-header-left">
                                 <span class="result-type">标签页</span>
                                 <span class="result-title">${this.escapeHtml(tab.title)}</span>
-                                ${tab.active ? '<span class="active-indicator">当前</span>' : ''}
                                 ${tab.pinned ? '<span class="pinned-indicator">📌</span>' : ''}
                             </div>
                             <div class="tab-actions">
@@ -1909,10 +1932,16 @@ class SearchModal {
             // 使用保存的窗口名称，如果没有则使用默认名称
             const displayName = this.getWindowName(group.windowId, group.windowTitle);
 
+            // 检查是否有多个窗口（用于决定是否显示菜单按钮）
+            const hasMultipleWindows = windowGroups.length > 1;
+
             return `
                 <div class="window-group">
                     <div class="window-header">
-                        <h4 class="window-title" data-window-id="${group.windowId}" title="点击编辑窗口名称">${this.escapeHtml(displayName)}</h4>
+                        <div class="window-title-container">
+                            <h4 class="window-title${hasMultipleWindows ? ' has-menu' : ''}" data-window-id="${group.windowId}" title="点击编辑窗口名称">${this.escapeHtml(displayName)}</h4>
+                            ${hasMultipleWindows ? `<button class="window-menu-btn" data-window-id="${group.windowId}" title="合并窗口">merge</button>` : ''}
+                        </div>
                         <span class="tab-count">${group.tabs.length} 个标签页</span>
                     </div>
                     <div class="tabs-list">
@@ -1934,6 +1963,14 @@ class SearchModal {
             titleElement.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.editWindowName(titleElement);
+            });
+        });
+
+        // 添加窗口菜单事件
+        this.modal.querySelectorAll('.window-menu-btn').forEach(menuBtn => {
+            menuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.showWindowMenu(menuBtn, windowGroups);
             });
         });
 
@@ -1962,14 +1999,6 @@ class SearchModal {
         });
     }
 
-    // 更新结果信息显示
-    updateResultsInfo(maxResults) {
-        const resultsInfo = this.modal.querySelector('#resultsInfo');
-        if (resultsInfo) {
-            resultsInfo.textContent = `显示最近${maxResults}条匹配结果`;
-        }
-    }
-
     // 加载当前的maxResults配置
     async loadCurrentMaxResults() {
         try {
@@ -1977,12 +2006,11 @@ class SearchModal {
                 action: 'getMaxResults'
             });
             if (response.success) {
-                this.updateResultsInfo(response.maxResults || 12);
+                // maxResults配置已获取，但不再需要更新UI显示
             }
         } catch (error) {
             console.error('获取maxResults配置失败:', error);
-            // 使用默认值
-            this.updateResultsInfo(12);
+            // 使用默认值，但不再需要更新UI显示
         }
     }
 
@@ -2948,6 +2976,100 @@ class SearchModal {
         } catch (error) {
             console.error('获取窗口名称失败:', error);
             return defaultName;
+        }
+    }
+
+    // 显示窗口菜单
+    showWindowMenu(menuBtn, windowGroups) {
+        const currentWindowId = parseInt(menuBtn.dataset.windowId);
+
+        // 移除已存在的菜单
+        this.hideWindowMenu();
+
+        // 检查是否有其他窗口可以合并
+        const otherWindows = windowGroups.filter(group => group.windowId !== currentWindowId);
+
+        // 如果只有一个窗口，不显示菜单
+        if (otherWindows.length === 0) {
+            console.log('只有一个窗口，不显示合并菜单');
+            return;
+        }
+
+        // 创建菜单
+        const menu = document.createElement('div');
+        menu.className = 'window-menu';
+        menu.innerHTML = `
+            <div class="window-menu-header">窗口操作</div>
+            <div class="window-menu-items">
+                ${otherWindows.map(group => {
+            const targetName = this.getWindowName(group.windowId, group.windowTitle);
+            return `
+                        <div class="window-menu-item" data-target-window="${group.windowId}">
+                            <span class="menu-icon">🔄</span>
+                            <span class="menu-text">合并到 "${this.escapeHtml(targetName)}"</span>
+                        </div>
+                    `;
+        }).join('')}
+            </div>
+        `;
+
+        // 定位菜单
+        const rect = menuBtn.getBoundingClientRect();
+        menu.style.position = 'absolute';
+        menu.style.top = `${rect.bottom + 5}px`;
+        menu.style.left = `${rect.left}px`;
+        menu.style.zIndex = '1000002';
+
+        // 添加到页面
+        document.body.appendChild(menu);
+
+        // 绑定菜单项点击事件
+        menu.querySelectorAll('.window-menu-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const targetWindowId = parseInt(item.dataset.targetWindow);
+                this.mergeWindows(currentWindowId, targetWindowId);
+                this.hideWindowMenu();
+            });
+        });
+
+        // 点击外部关闭菜单
+        setTimeout(() => {
+            document.addEventListener('click', this.hideWindowMenu.bind(this), { once: true });
+        }, 0);
+    }
+
+    // 隐藏窗口菜单
+    hideWindowMenu() {
+        const existingMenu = document.querySelector('.window-menu');
+        if (existingMenu) {
+            existingMenu.remove();
+        }
+    }
+
+    // 合并窗口
+    async mergeWindows(sourceWindowId, targetWindowId) {
+        try {
+            console.log(`合并窗口: ${sourceWindowId} -> ${targetWindowId}`);
+
+            // 通过消息传递到background script处理
+            const response = await this.sendMessageToBackground({
+                action: 'mergeWindows',
+                sourceWindowId: sourceWindowId,
+                targetWindowId: targetWindowId
+            });
+
+            if (response.success) {
+                console.log('窗口合并成功');
+                // 重新加载标签页列表
+                this.loadAllTabs();
+            } else {
+                console.error('窗口合并失败:', response.error);
+                alert('窗口合并失败: ' + response.error);
+            }
+        } catch (error) {
+            console.error('窗口合并出错:', error);
+            alert('窗口合并时出现错误');
         }
     }
 

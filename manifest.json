@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "soso search",
+  "name": "list view",
   "version": "1.1.0",
   "description": "Search through your bookmarks and browsing history",
   "icons": {
@@ -10,7 +10,7 @@
     "128": "images/icon-128.png"
   },
   "action": {
-    "default_title": "soso search"
+    "default_title": "list view"
   },
   "options_page": "options.html",
   "permissions": [
@@ -19,6 +19,7 @@
     "activeTab",
     "scripting",
     "tabs",
+    "windows",
     "storage"
   ],
   "commands": {

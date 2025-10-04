@@ -210,6 +210,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({ success: false, error: error.message });
             });
         return true;
+    } else if (request.action === 'mergeWindows') {
+        // 处理窗口合并请求
+        console.log('🔄 收到窗口合并请求:', request.sourceWindowId, '->', request.targetWindowId);
+        handleMergeWindowsRequest(request.sourceWindowId, request.targetWindowId, sendResponse)
+            .catch(error => {
+                console.error('❌ handleMergeWindowsRequest 执行失败:', error);
+                sendResponse({ success: false, error: error.message });
+            });
+        return true;
     }
 
     // 未知消息类型
@@ -1232,6 +1241,131 @@ async function handleDownloadAIModelRequest(sendResponse) {
     } finally {
         // 确保sendResponse被调用
         console.log('🔧 handleDownloadAIModelRequest 函数执行完成');
+    }
+}
+
+// 处理窗口合并请求
+async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendResponse) {
+    try {
+        console.log('🔄 开始处理窗口合并请求');
+        console.log('📊 源窗口ID:', sourceWindowId);
+        console.log('📊 目标窗口ID:', targetWindowId);
+
+        // 1. 参数验证
+        if (!sourceWindowId || !targetWindowId) {
+            throw new Error('源窗口ID和目标窗口ID不能为空');
+        }
+
+        if (sourceWindowId === targetWindowId) {
+            throw new Error('源窗口和目标窗口不能相同');
+        }
+
+        // 2. 检查窗口是否存在
+        console.log('🔍 检查窗口是否存在...');
+        const windows = await chrome.windows.getAll();
+        const sourceWindow = windows.find(w => w.id === sourceWindowId);
+        const targetWindow = windows.find(w => w.id === targetWindowId);
+
+        if (!sourceWindow) {
+            throw new Error(`源窗口 ${sourceWindowId} 不存在`);
+        }
+
+        if (!targetWindow) {
+            throw new Error(`目标窗口 ${targetWindowId} 不存在`);
+        }
+
+        console.log('✅ 窗口存在性检查通过');
+        console.log('📊 源窗口状态:', sourceWindow.state);
+        console.log('📊 目标窗口状态:', targetWindow.state);
+
+        // 3. 获取源窗口的所有标签页
+        console.log('🔍 获取源窗口标签页...');
+        const sourceTabs = await chrome.tabs.query({ windowId: sourceWindowId });
+
+        if (!sourceTabs || sourceTabs.length === 0) {
+            throw new Error('源窗口没有标签页');
+        }
+
+        console.log(`📊 源窗口有 ${sourceTabs.length} 个标签页`);
+
+        // 4. 检查目标窗口是否已关闭
+        if (targetWindow.state === 'minimized') {
+            console.log('⚠️ 目标窗口已最小化，尝试恢复');
+            try {
+                await chrome.windows.update(targetWindowId, { state: 'normal' });
+                console.log('✅ 目标窗口已恢复');
+            } catch (error) {
+                console.warn('⚠️ 恢复目标窗口失败:', error.message);
+            }
+        }
+
+        // 5. 执行标签页移动
+        console.log('🔄 开始移动标签页...');
+        const tabIds = sourceTabs.map(tab => tab.id);
+
+        try {
+            await chrome.tabs.move(tabIds, {
+                windowId: targetWindowId,
+                index: -1 // 移动到目标窗口末尾
+            });
+            console.log('✅ 标签页移动成功');
+        } catch (error) {
+            console.error('❌ 标签页移动失败:', error);
+            throw new Error(`标签页移动失败: ${error.message}`);
+        }
+
+        // 6. 关闭源窗口
+        console.log('🔄 关闭源窗口...');
+        try {
+            await chrome.windows.remove(sourceWindowId);
+            console.log('✅ 源窗口关闭成功');
+        } catch (error) {
+            console.error('❌ 关闭源窗口失败:', error);
+            // 即使关闭失败，标签页已经移动成功，所以不抛出错误
+            console.warn('⚠️ 标签页已移动，但源窗口关闭失败');
+        }
+
+        // 7. 验证合并结果
+        console.log('🔍 验证合并结果...');
+        const remainingTabs = await chrome.tabs.query({ windowId: sourceWindowId });
+        const targetTabs = await chrome.tabs.query({ windowId: targetWindowId });
+
+        console.log(`📊 源窗口剩余标签页: ${remainingTabs.length}`);
+        console.log(`📊 目标窗口标签页数量: ${targetTabs.length}`);
+
+        // 8. 返回成功响应
+        sendResponse({
+            success: true,
+            message: `成功将 ${sourceTabs.length} 个标签页合并到目标窗口`,
+            mergedTabsCount: sourceTabs.length,
+            targetWindowTabsCount: targetTabs.length
+        });
+
+        console.log('✅ 窗口合并操作完成');
+
+    } catch (error) {
+        console.error('❌ 窗口合并失败:', error);
+
+        // 根据错误类型提供更详细的错误信息
+        let errorMessage = error.message;
+
+        if (error.message.includes('No tab with id')) {
+            errorMessage = '标签页不存在或已被关闭';
+        } else if (error.message.includes('No window with id')) {
+            errorMessage = '窗口不存在或已被关闭';
+        } else if (error.message.includes('Cannot move tabs')) {
+            errorMessage = '无法移动标签页，可能权限不足';
+        } else if (error.message.includes('Cannot modify')) {
+            errorMessage = '无法修改标签页，可能受到浏览器限制';
+        }
+
+        sendResponse({
+            success: false,
+            error: errorMessage,
+            errorDetails: error.message
+        });
+    } finally {
+        console.log('🔧 handleMergeWindowsRequest 函数执行完成');
     }
 }
 
