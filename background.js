@@ -469,7 +469,7 @@ function groupTabsByWindow(tabs, query) {
         if (!windowMap.has(windowId)) {
             windowMap.set(windowId, {
                 windowId: windowId,
-                windowTitle: `窗口 ${windowId}`,
+                windowTitle: `Window ${windowId}`,
                 tabs: []
             });
         }
