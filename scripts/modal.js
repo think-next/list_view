@@ -10,6 +10,10 @@ class SearchModal {
         this.filterSelectedIndex = -1; // 当前选中的过滤器选项索引
         this.allTabs = null; // 存储所有标签页数据
 
+        // 书签分组状态管理
+        this.currentSelectedFolder = null; // 当前选定的书签分组
+        this.allBookmarks = []; // 存储所有书签的原始数据
+
         // AI调用状态管理
         this.aiCallInProgress = false;
         this.currentAIQuery = null;
@@ -149,6 +153,185 @@ class SearchModal {
 
 
 
+            /* 书签样式 */
+            .bookmark-item {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                margin-bottom: 8px;
+                padding: 12px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .bookmark-item:hover {
+                background: #f1f5f9;
+                border-color: #2563eb;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+            }
+
+            .bookmark-item.selected {
+                background: #dbeafe;
+                border-color: #2563eb;
+                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            }
+
+            .result-url {
+                font-size: 12px;
+                color: #64748b;
+                margin-top: 4px;
+                word-break: break-all;
+                opacity: 0.8;
+            }
+
+            .bookmark-actions {
+                display: flex;
+                gap: 4px;
+                align-items: center;
+            }
+
+            .delete-bookmark-btn {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                color: #64748b;
+                cursor: pointer;
+                padding: 6px 8px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+                transition: all 0.2s ease;
+                min-width: 24px;
+                height: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .delete-bookmark-btn:hover {
+                background: #fef2f2;
+                border-color: #fca5a5;
+                color: #dc2626;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+            }
+
+            .delete-bookmark-btn:active {
+                transform: translateY(0);
+                box-shadow: 0 1px 2px rgba(220, 38, 38, 0.2);
+            }
+
+            .bookmark-folder {
+                background: #e0f2fe;
+                color: #0369a1;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 500;
+                margin-left: 8px;
+                border: 1px solid #bae6fd;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .bookmark-folder:hover {
+                background: #bae6fd;
+                color: #0c4a6e;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(3, 105, 161, 0.2);
+            }
+
+            .folder-filter-state {
+                background: #f0f9ff;
+                border: 1px solid #bae6fd;
+                border-radius: 8px;
+                padding: 8px 12px;
+                margin-top: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .folder-filter-info {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .folder-icon {
+                font-size: 14px;
+            }
+
+            .folder-name {
+                font-size: 13px;
+                font-weight: 500;
+                color: #0369a1;
+            }
+
+            .close-folder-filter {
+                background: transparent;
+                border: none;
+                color: #64748b;
+                cursor: pointer;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 14px;
+                font-weight: bold;
+                transition: all 0.2s ease;
+            }
+
+            .close-folder-filter:hover {
+                background: #fef2f2;
+                color: #dc2626;
+            }
+
+            .folder-status-indicator {
+                background: #f0f9ff;
+                border: 1px solid #bae6fd;
+                border-radius: 8px;
+                padding: 12px 16px;
+                margin-bottom: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .folder-status-content {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                width: 100%;
+            }
+
+            .folder-status-icon {
+                font-size: 16px;
+            }
+
+            .folder-status-text {
+                font-size: 14px;
+                font-weight: 500;
+                color: #0369a1;
+                flex: 1;
+            }
+
+            .folder-status-close {
+                background: transparent;
+                border: none;
+                color: #64748b;
+                cursor: pointer;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 16px;
+                font-weight: bold;
+                transition: all 0.2s ease;
+                flex-shrink: 0;
+            }
+
+            .folder-status-close:hover {
+                background: #fef2f2;
+                color: #dc2626;
+            }
+
             /* 模态框主体 */
             .modal-body {
                 flex: 1;
@@ -213,8 +396,8 @@ class SearchModal {
             }
 
             .filter-tag {
-                background: #f1f8ff;
-                color: white;
+                background: #dbeafe;
+                color: #2563eb;
                 padding: 12px 16px;
                 font-size: 13px;
                 font-weight: 600;
@@ -225,7 +408,7 @@ class SearchModal {
                 display: flex;
                 align-items: center;
                 gap: 6px;
-                border-right: 1px solid rgba(255, 255, 255, 0.2);
+                border-right: 1px solid rgba(37, 99, 235, 0.2);
                 position: relative;
             }
 
@@ -253,19 +436,18 @@ class SearchModal {
                 top: 100%;
                 left: 0;
                 right: 0;
-                background: white;
+                background: #f8fafc;
                 border: 1px solid #e2e8f0;
-                border-radius: 12px;
-                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-                z-index: 1000001;
-                margin-top: 8px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                z-index: 1000002;
+                margin-top: 4px;
                 width: 100%;
                 overflow: hidden;
-                backdrop-filter: blur(10px);
             }
 
             .filter-option {
-                padding: 12px 20px;
+                padding: 10px 16px;
                 cursor: pointer;
                 transition: all 0.2s ease;
                 border-bottom: 1px solid #f1f5f9;
@@ -273,7 +455,7 @@ class SearchModal {
                 align-items: center;
                 gap: 8px;
                 position: relative;
-                min-height: 44px;
+                min-height: 40px;
             }
 
             .filter-option:last-child {
@@ -281,32 +463,31 @@ class SearchModal {
             }
 
             .filter-option:hover {
-                background: #f8fafc;
-                transform: translateX(4px);
+                background: #f1f5f9;
             }
 
             .filter-option.selected {
-                background: #f1f8ff;
-                color: white;
-                transform: translateX(4px);
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                background: #dbeafe;
+                color: #2563eb;
             }
 
             .filter-option span {
-                font-size: 14px;
-                font-weight: 600;
+                font-size: 13px;
+                font-weight: 500;
                 display: flex;
                 align-items: center;
                 gap: 8px;
                 flex: 1;
+                color: #475569;
             }
 
             .filter-option small {
-                font-size: 12px;
-                opacity: 0.7;
+                font-size: 11px;
+                opacity: 0.6;
                 font-weight: 400;
                 margin-left: auto;
                 white-space: nowrap;
+                color: #64748b;
             }
 
             .filter-option.selected small {
@@ -669,6 +850,8 @@ class SearchModal {
                 flex-direction: column;
                 gap: 12px;
                 padding: 20px;
+                position: relative;
+                z-index: 1;
             }
 
             .result-item {
@@ -1626,8 +1809,8 @@ class SearchModal {
                     e.preventDefault();
                     this.selectCurrentFilterOption();
                 }
-            } else if (this.results.length > 0 || this.windowGroups) {
-                // 搜索结果导航（包括list tab视图）
+            } else if (this.results.length > 0 || this.windowGroups || this.activeFilter === 'bookmark') {
+                // 搜索结果导航（包括list tab视图和书签视图）
                 if (e.key === 'ArrowDown' || e.key === 'Tab') {
                     e.preventDefault();
                     this.navigateResults(1);
@@ -1754,6 +1937,12 @@ class SearchModal {
         this.showLoading();
 
         try {
+            // 如果有选定的分组且是书签模式，在分组内搜索
+            if (this.currentSelectedFolder && this.activeFilter === 'bookmark') {
+                this.searchInFolder(query);
+                return;
+            }
+
             // 通过消息传递请求background script进行搜索
             const response = await this.sendMessageToBackground({
                 action: 'searchBookmarksAndHistory',
@@ -1764,6 +1953,9 @@ class SearchModal {
             if (response.success) {
                 if (response.isGrouped) {
                     this.displayGroupedResults(response.results);
+                } else if (this.activeFilter === 'bookmark') {
+                    // 书签模式下使用书签展示方式
+                    this.displayBookmarkResults(response.results);
                 } else {
                     this.displayResults(response.results);
                 }
@@ -1845,8 +2037,24 @@ class SearchModal {
             historyStatsSection.style.display = 'none';
         }
 
-        // 显示list tab内容（与插件启动时相同）
-        this.loadAllTabs();
+        // 根据当前过滤器状态决定显示内容
+        if (this.activeFilter === 'bookmark') {
+            // 如果是书签模式，检查是否有分组过滤
+            if (this.currentSelectedFolder) {
+                // 有分组过滤，显示该分组下的书签
+                const filteredBookmarks = this.allBookmarks.filter(bookmark =>
+                    bookmark.folderPath === this.currentSelectedFolder
+                );
+                this.displayBookmarkResults(filteredBookmarks);
+                this.showFolderFilterState(this.currentSelectedFolder);
+            } else {
+                // 没有分组过滤，显示所有书签
+                this.loadAllBookmarks();
+            }
+        } else {
+            // 默认显示list tab内容（与插件启动时相同）
+            this.loadAllTabs();
+        }
     }
 
     // 显示错误信息
@@ -2414,7 +2622,15 @@ class SearchModal {
 
     // 导航搜索结果
     navigateResults(direction) {
-        if (this.results.length === 0) return;
+        let totalItems = this.results.length;
+
+        // 如果是书签模式，使用书签项的数量
+        if (this.activeFilter === 'bookmark') {
+            const bookmarkItems = this.modal.querySelectorAll('.bookmark-item');
+            totalItems = bookmarkItems.length;
+        }
+
+        if (totalItems === 0) return;
 
         // 移除之前的选中状态
         this.updateSelectedItem(-1);
@@ -2422,10 +2638,10 @@ class SearchModal {
         // 计算新的选中索引
         if (direction > 0) {
             // 向下或Tab键
-            this.selectedIndex = (this.selectedIndex + 1) % this.results.length;
+            this.selectedIndex = (this.selectedIndex + 1) % totalItems;
         } else {
             // 向上键
-            this.selectedIndex = this.selectedIndex <= 0 ? this.results.length - 1 : this.selectedIndex - 1;
+            this.selectedIndex = this.selectedIndex <= 0 ? totalItems - 1 : this.selectedIndex - 1;
         }
 
         // 更新选中状态
@@ -2435,8 +2651,20 @@ class SearchModal {
     // 更新选中项
     updateSelectedItem(index) {
         const resultItems = this.modal.querySelectorAll('.result-item');
+        const bookmarkItems = this.modal.querySelectorAll('.bookmark-item');
 
+        // 处理搜索结果项
         resultItems.forEach((item, i) => {
+            if (i === index) {
+                item.classList.add('selected');
+                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+
+        // 处理书签项
+        bookmarkItems.forEach((item, i) => {
             if (i === index) {
                 item.classList.add('selected');
                 item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -2457,6 +2685,17 @@ class SearchModal {
                 // 书签和历史类型：打开新标签页
                 window.open(selectedResult.url, '_blank');
                 this.close();
+            }
+        } else if (this.activeFilter === 'bookmark') {
+            // 处理书签模式下的选中项
+            const bookmarkItems = this.modal.querySelectorAll('.bookmark-item');
+            if (this.selectedIndex >= 0 && this.selectedIndex < bookmarkItems.length) {
+                const selectedItem = bookmarkItems[this.selectedIndex];
+                const url = selectedItem.dataset.url;
+                if (url) {
+                    chrome.tabs.create({ url: url });
+                    this.close();
+                }
             }
         }
     }
@@ -2602,6 +2841,12 @@ class SearchModal {
             console.log('选择标签页过滤器，立即显示所有标签页');
             this.loadAllTabs();
         }
+
+        // 如果是书签过滤器，立即显示所有书签
+        if (filter === 'bookmark') {
+            console.log('选择书签过滤器，立即显示所有书签');
+            this.loadAllBookmarks();
+        }
     }
 
     // 更新过滤器标签
@@ -2676,6 +2921,322 @@ class SearchModal {
         } catch (error) {
             console.error('加载标签页出错:', error);
             this.showError('加载标签页时出现错误');
+        }
+    }
+
+    // 加载所有书签
+    async loadAllBookmarks() {
+        try {
+            console.log('开始加载所有书签');
+            this.showLoading();
+
+            // 通过消息传递请求background script获取所有书签
+            const response = await this.sendMessageToBackground({
+                action: 'getAllBookmarks'
+            });
+
+            if (response.success) {
+                console.log('获取书签成功:', response.results);
+                this.allBookmarks = response.results; // 保存所有书签数据
+                this.displayBookmarkResults(response.results);
+            } else {
+                console.error('获取书签失败:', response.error);
+                this.showError('获取书签失败，请重试');
+            }
+        } catch (error) {
+            console.error('加载书签出错:', error);
+            this.showError('加载书签时出现错误');
+        }
+    }
+
+    // 显示书签结果
+    displayBookmarkResults(bookmarks) {
+        console.log('显示书签结果:', bookmarks);
+        const loadingIndicator = this.modal.querySelector('#loadingIndicator');
+        const resultsContainer = this.modal.querySelector('#resultsContainer');
+        const historyStatsSection = this.modal.querySelector('#historyStatsSection');
+
+        loadingIndicator.style.display = 'none';
+
+        // 隐藏历史统计区域
+        if (historyStatsSection) {
+            historyStatsSection.style.display = 'none';
+        }
+
+        // 保存书签结果
+        this.results = [];
+        this.selectedIndex = -1; // 重置选中状态
+
+        // 将所有书签展平到results数组中，用于键盘导航
+        bookmarks.forEach(bookmark => {
+            this.results.push({
+                ...bookmark,
+                type: 'bookmark'
+            });
+        });
+
+        // 构建HTML内容
+        let htmlContent = '';
+
+        // 如果有选定的分组，显示分组状态指示器
+        if (this.currentSelectedFolder) {
+            htmlContent += `
+                <div class="folder-status-indicator">
+                    <div class="folder-status-content">
+                        <span class="folder-status-icon">📁</span>
+                        <span class="folder-status-text">当前选中: ${this.escapeHtml(this.currentSelectedFolder)}</span>
+                        <button class="folder-status-close" title="关闭分组过滤">×</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (!bookmarks || bookmarks.length === 0) {
+            htmlContent += `
+                <div class="no-results">
+                    <p>📚 暂无书签</p>
+                    <p>开始收藏网页后，这里会显示您的书签</p>
+                </div>
+            `;
+            resultsContainer.innerHTML = htmlContent;
+
+            // 绑定关闭按钮事件
+            this.bindFolderStatusEvents();
+            return;
+        }
+
+        const bookmarksHTML = bookmarks.map((bookmark, index) => `
+            <div class="bookmark-item" 
+                 data-url="${bookmark.url}" 
+                 data-bookmark-id="${bookmark.id}"
+                 data-index="${index}">
+                <div class="result-header">
+                    <div class="result-header-left">
+                        <span class="result-type">书签</span>
+                        <span class="result-title">${this.escapeHtml(bookmark.title)}</span>
+                        ${bookmark.folderPath ? `<span class="bookmark-folder" data-folder-path="${this.escapeHtml(bookmark.folderPath)}">📁 ${this.escapeHtml(bookmark.folderPath)}</span>` : ''}
+                    </div>
+                    <div class="bookmark-actions">
+                        <button class="delete-bookmark-btn" data-bookmark-id="${bookmark.id}" title="删除书签">×</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        // 添加书签列表
+        htmlContent += `
+            <div class="bookmarks-list">
+                ${bookmarksHTML}
+            </div>
+        `;
+
+        // 设置HTML内容
+        resultsContainer.innerHTML = htmlContent;
+
+        // 绑定书签事件和分组状态事件
+        this.bindBookmarkEvents();
+        this.bindFolderStatusEvents();
+    }
+
+    // 绑定分组状态事件
+    bindFolderStatusEvents() {
+        const closeBtn = this.modal.querySelector('.folder-status-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.clearFolderFilter();
+            });
+        }
+    }
+
+    // 绑定书签事件
+    bindBookmarkEvents() {
+        // 绑定书签点击事件
+        this.modal.querySelectorAll('.bookmark-item').forEach((item, index) => {
+            // 绑定整个书签项的点击事件，但排除分组标签和删除按钮
+            item.addEventListener('click', (e) => {
+                // 如果点击的是分组标签或删除按钮，不处理
+                if (e.target.classList.contains('bookmark-folder') ||
+                    e.target.classList.contains('delete-bookmark-btn')) {
+                    return;
+                }
+
+                const url = item.dataset.url;
+                if (url) {
+                    // 通过消息传递让background script创建标签页
+                    this.sendMessageToBackground({
+                        action: 'createTab',
+                        url: url
+                    }).then(() => {
+                        this.close();
+                    }).catch(error => {
+                        console.error('创建标签页失败:', error);
+                    });
+                }
+            });
+
+            // 添加键盘导航支持
+            item.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const url = item.dataset.url;
+                    if (url) {
+                        // 通过消息传递让background script创建标签页
+                        this.sendMessageToBackground({
+                            action: 'createTab',
+                            url: url
+                        }).then(() => {
+                            this.close();
+                        }).catch(error => {
+                            console.error('创建标签页失败:', error);
+                        });
+                    }
+                }
+            });
+
+            // 设置tabindex以支持键盘导航
+            item.setAttribute('tabindex', '0');
+        });
+
+        // 绑定删除书签按钮事件
+        this.modal.querySelectorAll('.delete-bookmark-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const bookmarkId = btn.dataset.bookmarkId;
+                if (bookmarkId) {
+                    this.deleteBookmark(bookmarkId);
+                }
+            });
+        });
+
+        // 绑定书签分组点击事件
+        this.modal.querySelectorAll('.bookmark-folder').forEach(folder => {
+            folder.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const folderPath = folder.dataset.folderPath;
+                if (folderPath) {
+                    this.filterBookmarksByFolder(folderPath);
+                }
+            });
+        });
+    }
+
+    // 按分组过滤书签
+    filterBookmarksByFolder(folderPath) {
+        console.log('按分组过滤书签:', folderPath);
+
+        // 设置当前选定的分组
+        this.currentSelectedFolder = folderPath;
+
+        // 过滤书签数据
+        const filteredBookmarks = this.allBookmarks.filter(bookmark =>
+            bookmark.folderPath === folderPath
+        );
+
+        // 显示过滤后的书签
+        this.displayBookmarkResults(filteredBookmarks);
+
+        // 显示分组状态
+        this.showFolderFilterState(folderPath);
+
+        console.log(`显示分组 "${folderPath}" 下的 ${filteredBookmarks.length} 个书签`);
+    }
+
+    // 显示分组过滤状态
+    showFolderFilterState(folderPath) {
+        const searchContainer = this.modal.querySelector('#searchContainer');
+        if (!searchContainer) return;
+
+        // 移除已存在的分组状态
+        const existingState = searchContainer.querySelector('.folder-filter-state');
+        if (existingState) {
+            existingState.remove();
+        }
+
+        // 创建分组状态显示
+        const folderState = document.createElement('div');
+        folderState.className = 'folder-filter-state';
+        folderState.innerHTML = `
+            <div class="folder-filter-info">
+                <span class="folder-icon">📁</span>
+                <span class="folder-name">${this.escapeHtml(folderPath)}</span>
+                <button class="close-folder-filter" title="关闭分组过滤">×</button>
+            </div>
+        `;
+
+        // 插入到搜索框下方
+        searchContainer.appendChild(folderState);
+
+        // 绑定关闭事件
+        const closeBtn = folderState.querySelector('.close-folder-filter');
+        closeBtn.addEventListener('click', () => {
+            this.clearFolderFilter();
+        });
+    }
+
+    // 清除分组过滤
+    clearFolderFilter() {
+        console.log('清除分组过滤');
+        this.currentSelectedFolder = null;
+
+        // 移除搜索框下方的分组状态显示
+        const folderState = this.modal.querySelector('.folder-filter-state');
+        if (folderState) {
+            folderState.remove();
+        }
+
+        // 移除内容区域顶部的分组状态指示器
+        const folderStatusIndicator = this.modal.querySelector('.folder-status-indicator');
+        if (folderStatusIndicator) {
+            folderStatusIndicator.remove();
+        }
+
+        // 显示所有书签
+        this.displayBookmarkResults(this.allBookmarks);
+    }
+
+    // 在分组内搜索
+    searchInFolder(query) {
+        console.log(`在分组 "${this.currentSelectedFolder}" 内搜索:`, query);
+
+        // 获取该分组下的所有书签
+        const folderBookmarks = this.allBookmarks.filter(bookmark =>
+            bookmark.folderPath === this.currentSelectedFolder
+        );
+
+        // 在分组内搜索匹配的书签
+        const searchResults = folderBookmarks.filter(bookmark => {
+            const title = bookmark.title.toLowerCase();
+            const url = bookmark.url.toLowerCase();
+            const searchTerm = query.toLowerCase();
+
+            return title.includes(searchTerm) || url.includes(searchTerm);
+        });
+
+        console.log(`在分组内找到 ${searchResults.length} 个匹配的书签`);
+
+        // 显示搜索结果
+        this.displayBookmarkResults(searchResults);
+    }
+
+    // 删除书签
+    async deleteBookmark(bookmarkId) {
+        try {
+            const response = await this.sendMessageToBackground({
+                action: 'deleteBookmark',
+                bookmarkId: bookmarkId
+            });
+
+            if (response.success) {
+                console.log('书签删除成功');
+                // 重新加载书签列表
+                this.loadAllBookmarks();
+            } else {
+                console.error('删除书签失败:', response.error);
+                this.showError('删除书签失败，请重试');
+            }
+        } catch (error) {
+            console.error('删除书签出错:', error);
+            this.showError('删除书签时出现错误');
         }
     }
 

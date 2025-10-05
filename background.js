@@ -219,6 +219,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({ success: false, error: error.message });
             });
         return true;
+    } else if (request.action === 'getAllBookmarks') {
+        // 处理获取所有书签请求
+        handleGetAllBookmarksRequest(sendResponse)
+            .catch(error => {
+                console.error('❌ handleGetAllBookmarksRequest 执行失败:', error);
+                sendResponse({ success: false, error: error.message });
+            });
+        return true;
+    } else if (request.action === 'deleteBookmark') {
+        // 处理删除书签请求
+        handleDeleteBookmarkRequest(request.bookmarkId, sendResponse)
+            .catch(error => {
+                console.error('❌ handleDeleteBookmarkRequest 执行失败:', error);
+                sendResponse({ success: false, error: error.message });
+            });
+        return true;
+    } else if (request.action === 'createTab') {
+        // 处理创建标签页请求
+        handleCreateTabRequest(request.url, sendResponse)
+            .catch(error => {
+                console.error('❌ handleCreateTabRequest 执行失败:', error);
+                sendResponse({ success: false, error: error.message });
+            });
+        return true;
     }
 
     // 未知消息类型
@@ -304,7 +328,7 @@ async function handleSearchRequest(query, filter, sendResponse) {
 
 // 搜索书签
 async function searchBookmarks(query) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         console.log('开始搜索书签:', query);
         console.log('chrome.bookmarks类型:', typeof chrome.bookmarks);
 
@@ -313,24 +337,63 @@ async function searchBookmarks(query) {
             return;
         }
 
-        chrome.bookmarks.search(query, (results) => {
-            if (chrome.runtime.lastError) {
-                console.error('书签搜索错误:', chrome.runtime.lastError);
-                reject(new Error(chrome.runtime.lastError.message));
-                return;
+        try {
+            // 获取所有书签树结构
+            const bookmarks = await chrome.bookmarks.getTree();
+            const flatBookmarks = [];
+
+            // 递归展平书签树，包含路径信息
+            function flattenBookmarks(nodes, parentPath = '') {
+                for (const node of nodes) {
+                    if (node.url) {
+                        // 这是一个书签，添加到结果中
+                        // 移除"书签栏"前缀，如果路径以"书签栏/"开头则去掉
+                        let cleanPath = parentPath || '';
+                        if (cleanPath.startsWith('书签栏/')) {
+                            cleanPath = cleanPath.substring(3); // 移除"书签栏/"（3个字符）
+                        } else if (cleanPath === '书签栏') {
+                            cleanPath = ''; // 如果就是"书签栏"，则设为空
+                        }
+
+                        // 移除路径开头的"/"分隔符
+                        if (cleanPath.startsWith('/')) {
+                            cleanPath = cleanPath.substring(1);
+                        }
+
+                        flatBookmarks.push({
+                            title: node.title,
+                            url: node.url,
+                            type: 'bookmark',
+                            dateAdded: node.dateAdded,
+                            id: node.id,
+                            folderPath: cleanPath
+                        });
+                    }
+                    if (node.children) {
+                        // 这是一个文件夹，递归处理子项
+                        const currentPath = parentPath ? `${parentPath}/${node.title}` : node.title;
+                        flattenBookmarks(node.children, currentPath);
+                    }
+                }
             }
 
-            const bookmarkResults = results
-                .filter(item => item.url)
-                .map(item => ({
-                    title: item.title,
-                    url: item.url,
-                    type: 'bookmark',
-                    dateAdded: item.dateAdded,
-                    id: item.id
-                }));
-            resolve(bookmarkResults);
-        });
+            flattenBookmarks(bookmarks);
+
+            // 在展平的书签中搜索匹配的书签
+            const searchResults = flatBookmarks.filter(bookmark => {
+                const title = bookmark.title.toLowerCase();
+                const url = bookmark.url.toLowerCase();
+                const searchTerm = query.toLowerCase();
+
+                return title.includes(searchTerm) || url.includes(searchTerm);
+            });
+
+            console.log(`书签搜索完成，找到 ${searchResults.length} 个匹配的书签`);
+            resolve(searchResults);
+        } catch (error) {
+            console.error('书签搜索出错:', error);
+            reject(error);
+        }
     });
 }
 
@@ -1244,6 +1307,82 @@ async function handleDownloadAIModelRequest(sendResponse) {
     }
 }
 
+// 处理获取所有书签请求
+async function handleGetAllBookmarksRequest(sendResponse) {
+    try {
+        console.log('📚 开始获取所有书签');
+
+        const bookmarks = await chrome.bookmarks.getTree();
+        const flatBookmarks = [];
+
+        function flattenBookmarks(nodes, parentPath = '') {
+            for (const node of nodes) {
+                if (node.url) {
+                    // 这是一个书签，添加到结果中
+                    // 移除"书签栏"前缀，如果路径以"书签栏/"开头则去掉
+                    let cleanPath = parentPath || '';
+                    if (cleanPath.startsWith('书签栏/')) {
+                        cleanPath = cleanPath.substring(3); // 移除"书签栏/"（3个字符）
+                    } else if (cleanPath === '书签栏') {
+                        cleanPath = ''; // 如果就是"书签栏"，则设为空
+                    }
+
+                    // 移除路径开头的"/"分隔符
+                    if (cleanPath.startsWith('/')) {
+                        cleanPath = cleanPath.substring(1);
+                    }
+
+                    flatBookmarks.push({
+                        ...node,
+                        folderPath: cleanPath
+                    });
+                }
+                if (node.children) {
+                    // 这是一个文件夹，递归处理子项
+                    const currentPath = parentPath ? `${parentPath}/${node.title}` : node.title;
+                    flattenBookmarks(node.children, currentPath);
+                }
+            }
+        }
+
+        flattenBookmarks(bookmarks);
+
+        console.log(`📚 获取到 ${flatBookmarks.length} 个书签`);
+
+        sendResponse({
+            success: true,
+            results: flatBookmarks
+        });
+    } catch (error) {
+        console.error('❌ 获取书签失败:', error);
+        sendResponse({
+            success: false,
+            error: error.message
+        });
+    }
+}
+
+// 处理删除书签请求
+async function handleDeleteBookmarkRequest(bookmarkId, sendResponse) {
+    try {
+        console.log('🗑️ 开始删除书签:', bookmarkId);
+
+        await chrome.bookmarks.remove(bookmarkId);
+
+        console.log('✅ 书签删除成功');
+        sendResponse({
+            success: true,
+            message: '书签删除成功'
+        });
+    } catch (error) {
+        console.error('❌ 删除书签失败:', error);
+        sendResponse({
+            success: false,
+            error: error.message
+        });
+    }
+}
+
 // 处理窗口合并请求
 async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendResponse) {
     try {
@@ -1366,6 +1505,21 @@ async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendRes
         });
     } finally {
         console.log('🔧 handleMergeWindowsRequest 函数执行完成');
+    }
+}
+
+// 处理创建标签页请求
+async function handleCreateTabRequest(url, sendResponse) {
+    try {
+        console.log('🔗 创建标签页:', url);
+
+        const tab = await chrome.tabs.create({ url: url });
+        console.log('✅ 标签页创建成功:', tab.id);
+
+        sendResponse({ success: true, tabId: tab.id });
+    } catch (error) {
+        console.error('❌ 创建标签页失败:', error);
+        sendResponse({ success: false, error: error.message });
     }
 }
 
