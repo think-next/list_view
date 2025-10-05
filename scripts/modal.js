@@ -2793,7 +2793,14 @@ class SearchModal {
         if (query.length === 0) {
             this.showWelcomeMessage();
         } else {
-            // 仅当开启AI推荐时，才显示AI相关UI
+            // 在list模式下不显示AI推荐UI
+            if (this.activeFilter) {
+                // 移除已有AI UI，避免状态不一致
+                this.removeAIUI();
+                return;
+            }
+
+            // 仅在默认搜索模式下显示AI推荐UI
             this.checkAIEnabled()
                 .then(enabled => {
                     // 移除已有AI UI，避免状态不一致
@@ -2903,6 +2910,9 @@ class SearchModal {
         const searchInput = this.modal.querySelector('#searchInput');
         searchInput.value = '';
         searchInput.focus();
+
+        // 移除任何现有的AI UI，因为list模式下不显示AI推荐
+        this.removeAIUI();
 
         // 如果是标签页过滤器，立即显示所有标签页
         if (filter === 'tab') {
