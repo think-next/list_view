@@ -184,6 +184,30 @@
             text-align: center;
         }
 
+        /* Unified number input style */
+        .input-number {
+            width: 100px;
+            padding: 8px 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: #fff;
+            color: #2c3e50;
+            font-size: 14px;
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+        }
+
+        .input-number:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        /* Show native steppers for number input */
+        input[type=number] {
+            -moz-appearance: auto;
+            appearance: auto;
+        }
+
         .toggle-container {
             display: flex;
             align-items: center;
@@ -356,11 +380,11 @@
                         <div class="setting-item">
                             <div>
                                 <div class="setting-label">Results count</div>
-                                <div class="setting-description">Max number of items shown</div>
+                                <div class="setting-description">Max number of items shown in default mode</div>
                             </div>
-                            <div class="slider-container">
-                                <input type="range" class="slider" id="maxResults" min="5" max="50" value="12" step="1">
-                                <div class="slider-value" id="sliderValue">12</div>
+                            <div>
+                                <input type="number" id="maxResults" min="5" max="50" value="12" step="1"
+                                    class="input-number">
                             </div>
                         </div>
 

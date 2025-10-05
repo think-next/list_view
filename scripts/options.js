@@ -2,8 +2,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const navItems = document.querySelectorAll('.nav-item');
     const contentSections = document.querySelectorAll('.content-section');
-    const maxResultsSlider = document.getElementById('maxResults');
-    const sliderValue = document.getElementById('sliderValue');
+    const maxResultsInput = document.getElementById('maxResults');
     const aiRecommendationToggle = document.getElementById('aiRecommendation');
     const saveBtn = document.getElementById('saveSettings');
     const statusMessage = document.getElementById('statusMessage');
@@ -23,14 +22,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // 滑块值更新
-    maxResultsSlider.addEventListener('input', function () {
-        sliderValue.textContent = this.value;
+    // 数值边界与步进（防御）
+    maxResultsInput.addEventListener('input', function () {
+        const num = Math.max(5, Math.min(50, parseInt(this.value || '12', 10)));
+        this.value = isNaN(num) ? 12 : num;
     });
 
     // 保存设置
     saveBtn.addEventListener('click', function () {
-        const maxResults = parseInt(maxResultsSlider.value);
+        const maxResults = parseInt(maxResultsInput.value);
         const aiRecommendation = aiRecommendationToggle.checked;
 
         // 保存到chrome存储
@@ -50,8 +50,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function loadSettings() {
         chrome.storage.local.get(['maxResults', 'aiRecommendation'], function (result) {
             if (result.maxResults) {
-                maxResultsSlider.value = result.maxResults;
-                sliderValue.textContent = result.maxResults;
+                maxResultsInput.value = result.maxResults;
             }
             // 默认启用AI推荐（如果用户未设置过）
             aiRecommendationToggle.checked = result.aiRecommendation !== false;
