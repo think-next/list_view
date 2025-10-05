@@ -332,31 +332,31 @@
     <div class="container">
         <div class="header">
             <h1>🚀 soso search</h1>
-            <p>快速搜索扩展设置</p>
+            <p>Quick search settings</p>
         </div>
 
         <div class="main-content">
             <div class="sidebar">
                 <div class="nav-item active" data-section="settings">
-                    ⚙️ 设置
+                    ⚙️ Settings
                 </div>
                 <div class="nav-item" data-section="info">
-                    ℹ️ 信息
+                    ℹ️ Info
                 </div>
             </div>
 
             <div class="content-area">
                 <!-- 设置页面 -->
                 <div class="content-section active" id="settings">
-                    <h2 class="section-title">设置</h2>
+                    <h2 class="section-title">Settings</h2>
 
                     <div class="setting-group">
-                        <h3>搜索配置</h3>
+                        <h3>Search</h3>
 
                         <div class="setting-item">
                             <div>
-                                <div class="setting-label">搜索结果数量</div>
-                                <div class="setting-description">控制搜索时最多显示的条目数量</div>
+                                <div class="setting-label">Results count</div>
+                                <div class="setting-description">Max number of items shown</div>
                             </div>
                             <div class="slider-container">
                                 <input type="range" class="slider" id="maxResults" min="5" max="50" value="12" step="1">
@@ -366,8 +366,8 @@
 
                         <div class="setting-item">
                             <div>
-                                <div class="setting-label">AI 智能推荐</div>
-                                <div class="setting-description">启用 AI 根据搜索意图推荐最相关的链接</div>
+                                <div class="setting-label">AI Recommendations</div>
+                                <div class="setting-description">Enable AI suggestions for your search</div>
                             </div>
                             <div class="toggle-container">
                                 <label class="toggle-switch">
@@ -378,60 +378,60 @@
                         </div>
                     </div>
 
-                    <button class="save-btn" id="saveSettings">保存设置</button>
+                    <button class="save-btn" id="saveSettings">Save</button>
 
                     <div class="status-message" id="statusMessage"></div>
                 </div>
 
                 <!-- 信息页面 -->
                 <div class="content-section" id="info">
-                    <h2 class="section-title">插件信息</h2>
+                    <h2 class="section-title">About</h2>
 
                     <div class="info-card">
-                        <h4>基本信息</h4>
+                        <h4>Basics</h4>
                         <div class="info-item">
-                            <span class="info-label">插件名称</span>
+                            <span class="info-label">Name</span>
                             <span class="info-value">soso search</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">版本</span>
+                            <span class="info-label">Version</span>
                             <span class="info-value" id="extensionVersion">1.0.0</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">作者</span>
+                            <span class="info-label">Author</span>
                             <span class="info-value">soso search Team</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">更新时间</span>
+                            <span class="info-label">Updated</span>
                             <span class="info-value" id="lastUpdate">2024-01-01</span>
                         </div>
                     </div>
 
                     <div class="info-card">
-                        <h4>功能特性</h4>
+                        <h4>Features</h4>
                         <div class="info-item">
-                            <span class="info-label">快捷键</span>
+                            <span class="info-label">Shortcut</span>
                             <span class="info-value">Ctrl+K (Mac: Cmd+K)</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">支持搜索</span>
-                            <span class="info-value">历史记录、书签、标签页</span>
+                            <span class="info-label">Search supports</span>
+                            <span class="info-value">History, Bookmarks, Tabs</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">智能过滤</span>
-                            <span class="info-value">支持类型过滤和关键词搜索</span>
+                            <span class="info-label">Smart filter</span>
+                            <span class="info-value">Type filters and keywords</span>
                         </div>
                     </div>
 
                     <div class="info-card">
-                        <h4>使用统计</h4>
+                        <h4>Usage</h4>
                         <div class="info-item">
-                            <span class="info-label">总搜索次数</span>
+                            <span class="info-label">Total searches</span>
                             <span class="info-value" id="totalSearches">0</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">最常用功能</span>
-                            <span class="info-value" id="mostUsedFeature">历史记录搜索</span>
+                            <span class="info-label">Most used</span>
+                            <span class="info-value" id="mostUsedFeature">History search</span>
                         </div>
                     </div>
                 </div>

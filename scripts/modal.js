@@ -46,32 +46,32 @@ class SearchModal {
                             <div class="filter-container">
                                 <div class="input-row">
                                     <div id="activeFilterTag" class="filter-tag" style="display: none;"></div>
-                                    <input type="text" id="searchInput" placeholder="输入搜索关键词..." autocomplete="off">
+                                    <input type="text" id="searchInput" placeholder="Search..." autocomplete="off">
                                 </div>
                                 <div id="filterDropdown" class="filter-dropdown" style="display: none;"></div>
                             </div>
-                            <button id="searchBtn">搜索</button>
+                            <button id="searchBtn">Search</button>
                         </div>
                     </div>
                     
                     <div class="results-section">
                         <div id="loadingIndicator" class="loading" style="display: none;">
                             <div class="spinner"></div>
-                            <span>搜索中...</span>
+                            <span>Searching...</span>
                         </div>
                         
-                        <!-- 历史统计区域 -->
+                        <!-- History stats section -->
                         <div id="historyStatsSection" class="history-stats-section" style="display: none;">
                             <div class="stats-header">
-                                <h3>📊 过去7天访问统计</h3>
-                                <p>按域名分组，显示访问最多的路径</p>
+                                <h3>📊 Last 7 Days Activity</h3>
+                                <p>Grouped by domain. Top paths.</p>
                             </div>
                             <div id="statsContainer" class="stats-container"></div>
                         </div>
                         
                         <div id="resultsContainer" class="results-container">
                             <div class="welcome-message">
-                                <p>输入关键词开始搜索您的书签和浏览历史</p>
+                                <p>Type to search bookmarks and history</p>
                             </div>
                         </div>
                     </div>
@@ -1987,11 +1987,11 @@ class SearchModal {
                 // 注意：AI推荐现在只在手动触发时调用
             } else {
                 console.error('搜索失败:', response.error);
-                this.showError('搜索时出现错误，请重试');
+                this.showError('Search failed. Please try again.');
             }
         } catch (error) {
             console.error('搜索出错:', error);
-            this.showError('搜索时出现错误，请重试');
+            this.showError('Search failed. Please try again.');
         }
     }
 
@@ -2102,11 +2102,11 @@ class SearchModal {
                 this.displayResults(response.results);
             } else {
                 console.error('获取历史记录失败:', response.error);
-                this.showError('获取历史记录失败，请重试');
+                this.showError('Failed to load history. Please try again.');
             }
         } catch (error) {
             console.error('加载历史记录出错:', error);
-            this.showError('加载历史记录时出现错误');
+            this.showError('Error loading history.');
         }
     }
 
@@ -2159,8 +2159,8 @@ class SearchModal {
             console.log('没有找到窗口组');
             resultsContainer.innerHTML = `
                 <div class="no-results">
-                    <p>未找到匹配的标签页</p>
-                    <p>尝试使用不同的关键词</p>
+                    <p>No matching tabs found</p>
+                    <p>Try different keywords</p>
                 </div>
             `;
 
@@ -2192,12 +2192,12 @@ class SearchModal {
                          data-window-id="${tab.windowId}">
                         <div class="result-header">
                             <div class="result-header-left">
-                                <span class="result-type">标签页</span>
+                                <span class="result-type">Tab</span>
                                 <span class="result-title">${this.escapeHtml(tab.title)}</span>
                                 ${tab.pinned ? '<span class="pinned-indicator">📌</span>' : ''}
                             </div>
                             <div class="tab-actions">
-                                <button class="close-tab-btn" data-tab-id="${tab.tabId}" title="关闭标签页">×</button>
+                                <button class="close-tab-btn" data-tab-id="${tab.tabId}" title="Close tab">×</button>
                             </div>
                         </div>
                         <div class="result-url">${this.escapeHtml(truncatedUrl)}</div>
@@ -2215,10 +2215,10 @@ class SearchModal {
                 <div class="window-group">
                     <div class="window-header">
                         <div class="window-title-container">
-                            <h4 class="window-title${hasMultipleWindows ? ' has-menu' : ''}" data-window-id="${group.windowId}" title="点击编辑窗口名称">${this.escapeHtml(displayName)}</h4>
+                            <h4 class="window-title${hasMultipleWindows ? ' has-menu' : ''}" data-window-id="${group.windowId}" title="Click to rename window">${this.escapeHtml(displayName)}</h4>
                             ${hasMultipleWindows ? `<button class="window-menu-btn" data-window-id="${group.windowId}" title="合并窗口">merge</button>` : ''}
                         </div>
-                        <span class="tab-count">${group.tabs.length} 个标签页</span>
+                        <span class="tab-count">${group.tabs.length} tabs</span>
                     </div>
                     <div class="tabs-list">
                         ${tabsHTML}
@@ -2325,16 +2325,16 @@ class SearchModal {
             console.log('📥 收到AI推荐响应:', response);
 
             if (response.success) {
-                console.log('✅ AI推荐成功，推荐数量:', response.recommendations?.length || 0);
-                console.log('📋 推荐内容:', response.recommendations);
+                console.log('✅ AI success, count:', response.recommendations?.length || 0);
+                console.log('📋 Recommendations:', response.recommendations);
                 this.displayAIRecommendations(response.recommendations);
             } else {
-                console.log('❌ AI推荐失败:', response.error);
+                console.log('❌ AI failed:', response.error);
                 this.hideAILoadingState();
-                this.showAIError(`AI推荐失败: ${response.error || '未知错误'}`);
+                this.showAIError(`AI failed: ${response.error || 'Unknown error'}`);
             }
         } catch (error) {
-            console.error('💥 获取AI推荐失败:', error);
+            console.error('💥 AI error:', error);
             this.hideAILoadingState();
         } finally {
             // 重置AI调用状态
@@ -2393,7 +2393,7 @@ class SearchModal {
         aiLoading.innerHTML = `
             <div class="ai-header">
                 <span class="ai-icon">🤖</span>
-                <span class="ai-title">AI 正在分析您的搜索意图...</span>
+                <span class="ai-title">AI analyzing your intent...</span>
                 <div class="ai-spinner"></div>
             </div>
         `;
@@ -2426,7 +2426,7 @@ class SearchModal {
         aiRecommendations.innerHTML = `
             <div class="ai-header">
                 <span class="ai-icon">🤖</span>
-                <span class="ai-title">AI 智能推荐</span>
+                <span class="ai-title">AI Recommendations</span>
             </div>
             <div class="ai-results">
                 ${recommendations.map((rec, index) => `
@@ -2436,7 +2436,7 @@ class SearchModal {
                             <div class="ai-result-reason">${rec.reason}</div>
                             <div class="ai-result-url">${this.truncateUrl(rec.url, 60)}</div>
                         </div>
-                        <div class="ai-result-badge">AI推荐</div>
+                        <div class="ai-result-badge">AI</div>
                     </div>
                 `).join('')}
             </div>
@@ -2479,16 +2479,16 @@ class SearchModal {
         aiError.innerHTML = `
             <div class="ai-header">
                 <span class="ai-icon">⚠️</span>
-                <span class="ai-title">AI 推荐不可用</span>
+                <span class="ai-title">AI unavailable</span>
             </div>
             <div class="ai-error-content">
                 <p>${message}</p>
                 <div class="ai-error-actions">
                     <button class="ai-settings-btn" id="aiSettingsBtn">
-                        打开设置
+                        Open Settings
                     </button>
                     <button class="ai-check-btn" id="aiCheckBtn">
-                        检查状态
+                        Check Status
                     </button>
                 </div>
             </div>
@@ -2537,7 +2537,7 @@ class SearchModal {
         } catch (error) {
             console.error('备选方案也失败:', error);
             // 最后的备选方案：显示提示信息
-            alert('请手动打开扩展设置页面来配置AI推荐功能');
+            alert('Open extension settings to configure AI.');
         }
     }
 
@@ -2555,7 +2555,7 @@ class SearchModal {
                     });
 
                     if (response.success) {
-                        let message = `AI推荐状态：${response.enabled ? '已启用' : '已禁用'}\nAI权限：${response.permission ? '已授权' : '未授权'}`;
+                        let message = `AI: ${response.enabled ? 'Enabled' : 'Disabled'}\nPermission: ${response.permission ? 'Granted' : 'Not granted'}`;
 
                         if (!response.permission) {
                             message += `\n\n权限错误：${response.permissionError || '未知错误'}`;
@@ -2569,11 +2569,11 @@ class SearchModal {
 
                         alert(message);
                     } else {
-                        alert('检查失败：' + response.error);
+                        alert('Check failed: ' + response.error);
                     }
                 } catch (error) {
                     console.error('检查AI状态失败:', error);
-                    alert('检查AI状态失败，请查看控制台');
+                    alert('Check failed. See console for details.');
                 }
             });
         } else {
@@ -2826,15 +2826,15 @@ class SearchModal {
         dropdown.innerHTML = `
             <div class="filter-option" data-filter="history">
                 <span>📊 list history</span>
-                <small>仅搜索历史记录</small>
+                <small>History only</small>
             </div>
             <div class="filter-option" data-filter="tab">
                 <span>📑 list tab</span>
-                <small>仅搜索当前标签页</small>
+                <small>Tabs only</small>
             </div>
             <div class="filter-option" data-filter="bookmark">
                 <span>🔖 list bookmark</span>
-                <small>仅搜索书签</small>
+                <small>Bookmarks only</small>
             </div>
         `;
 
@@ -2936,9 +2936,9 @@ class SearchModal {
 
         if (this.activeFilter) {
             const filterNames = {
-                'history': '历史',
-                'tab': '标签页',
-                'bookmark': '书签'
+                'history': 'History',
+                'tab': 'Tabs',
+                'bookmark': 'Bookmarks'
             };
 
             filterTag.textContent = `[${filterNames[this.activeFilter]}]`;
@@ -2966,11 +2966,11 @@ class SearchModal {
     // 获取类型标签
     getTypeLabel(type) {
         const typeLabels = {
-            'bookmark': '书签',
-            'history': '历史',
-            'tab': '标签页'
+            'bookmark': 'Bookmark',
+            'history': 'History',
+            'tab': 'Tab'
         };
-        return typeLabels[type] || '未知';
+        return typeLabels[type] || 'Unknown';
     }
 
     // 加载所有标签页
@@ -2990,11 +2990,11 @@ class SearchModal {
                 this.displayGroupedResults(response.results);
             } else {
                 console.error('获取标签页失败:', response.error);
-                this.showError('获取标签页失败，请重试');
+                this.showError('Failed to load tabs. Please try again.');
             }
         } catch (error) {
             console.error('加载标签页出错:', error);
-            this.showError('加载标签页时出现错误');
+            this.showError('Error loading tabs.');
         }
     }
 
@@ -3015,11 +3015,11 @@ class SearchModal {
                 this.displayBookmarkResults(response.results);
             } else {
                 console.error('获取书签失败:', response.error);
-                this.showError('获取书签失败，请重试');
+                this.showError('Failed to load bookmarks. Please try again.');
             }
         } catch (error) {
             console.error('加载书签出错:', error);
-            this.showError('加载书签时出现错误');
+            this.showError('Error loading bookmarks.');
         }
     }
 
@@ -3058,8 +3058,8 @@ class SearchModal {
                 <div class="folder-status-indicator">
                     <div class="folder-status-content">
                         <span class="folder-status-icon">📁</span>
-                        <span class="folder-status-text">当前选中: ${this.escapeHtml(this.currentSelectedFolder)}</span>
-                        <button class="folder-status-close" title="关闭分组过滤">×</button>
+                        <span class="folder-status-text">Selected: ${this.escapeHtml(this.currentSelectedFolder)}</span>
+                        <button class="folder-status-close" title="Clear folder filter">×</button>
                     </div>
                 </div>
             `;
@@ -3068,8 +3068,8 @@ class SearchModal {
         if (!bookmarks || bookmarks.length === 0) {
             htmlContent += `
                 <div class="no-results">
-                    <p>📚 暂无书签</p>
-                    <p>开始收藏网页后，这里会显示您的书签</p>
+                    <p>📚 No bookmarks</p>
+                    <p>Your saved pages will appear here</p>
                 </div>
             `;
             resultsContainer.innerHTML = htmlContent;
@@ -3086,12 +3086,12 @@ class SearchModal {
                  data-index="${index}">
                 <div class="result-header">
                     <div class="result-header-left">
-                        <span class="result-type">书签</span>
+                        <span class="result-type">Bookmark</span>
                         <span class="result-title">${this.escapeHtml(bookmark.title)}</span>
                         ${bookmark.folderPath ? `<span class="bookmark-folder" data-folder-path="${this.escapeHtml(bookmark.folderPath)}">📁 ${this.escapeHtml(bookmark.folderPath)}</span>` : ''}
                     </div>
                     <div class="bookmark-actions">
-                        <button class="delete-bookmark-btn" data-bookmark-id="${bookmark.id}" title="删除书签">×</button>
+                        <button class="delete-bookmark-btn" data-bookmark-id="${bookmark.id}" title="Delete bookmark">×</button>
                     </div>
                 </div>
             </div>
@@ -3230,7 +3230,7 @@ class SearchModal {
             <div class="folder-filter-info">
                 <span class="folder-icon">📁</span>
                 <span class="folder-name">${this.escapeHtml(folderPath)}</span>
-                <button class="close-folder-filter" title="关闭分组过滤">×</button>
+                <button class="close-folder-filter" title="Clear folder filter">×</button>
             </div>
         `;
 
@@ -3303,11 +3303,11 @@ class SearchModal {
                 this.loadAllBookmarks();
             } else {
                 console.error('删除书签失败:', response.error);
-                this.showError('删除书签失败，请重试');
+                this.showError('Failed to delete bookmark. Please try again.');
             }
         } catch (error) {
             console.error('删除书签出错:', error);
-            this.showError('删除书签时出现错误');
+            this.showError('Error deleting bookmark.');
         }
     }
 
@@ -3445,7 +3445,7 @@ class SearchModal {
         statsContainer.innerHTML = `
             <div class="stats-loading">
                 <div class="spinner"></div>
-                <span>正在加载历史统计...</span>
+                <span>Loading stats...</span>
             </div>
         `;
 
@@ -3459,11 +3459,11 @@ class SearchModal {
                 this.displayHistoryStats(response.stats);
             } else {
                 console.error('获取历史统计失败:', response.error);
-                this.showStatsError('获取历史统计失败，请重试');
+                this.showStatsError('Failed to load stats. Please try again.');
             }
         } catch (error) {
             console.error('历史统计请求出错:', error);
-            this.showStatsError('获取历史统计时出现错误');
+            this.showStatsError('Error loading stats.');
         }
     }
 
@@ -3474,8 +3474,8 @@ class SearchModal {
         if (!stats || stats.length === 0) {
             statsContainer.innerHTML = `
                 <div class="no-stats">
-                    <p>📊 过去7天暂无访问记录</p>
-                    <p>开始浏览网页后，这里会显示您的访问统计</p>
+                    <p>📊 No activity in the last 7 days</p>
+                    <p>Activity will appear here after you browse</p>
                 </div>
             `;
             return;
@@ -3499,7 +3499,7 @@ class SearchModal {
                             <div class="domain-icon">${domainIcon}</div>
                             ${this.escapeHtml(domain.domain)}
                         </div>
-                        <div class="domain-visits">总访问 ${domain.totalVisits} 次</div>
+                        <div class="domain-visits">Total visits: ${domain.totalVisits}</div>
                     </div>
                     <div class="paths-list">
                         ${pathsHTML}
@@ -3631,7 +3631,7 @@ class SearchModal {
         const menu = document.createElement('div');
         menu.className = 'window-menu';
         menu.innerHTML = `
-            <div class="window-menu-header">窗口操作</div>
+            <div class="window-menu-header">Window actions</div>
             <div class="window-menu-items">
                 ${otherWindows.map(group => {
             const targetName = this.getWindowName(group.windowId, group.windowTitle);
@@ -3697,11 +3697,11 @@ class SearchModal {
                 this.loadAllTabs();
             } else {
                 console.error('窗口合并失败:', response.error);
-                alert('窗口合并失败: ' + response.error);
+                alert('Merge failed: ' + response.error);
             }
         } catch (error) {
             console.error('窗口合并出错:', error);
-            alert('窗口合并时出现错误');
+            alert('Merge error');
         }
     }
 
@@ -3726,7 +3726,7 @@ class SearchModal {
                     </div>
                 </div>
                 <div class="ai-download-content">
-                    <h3 class="ai-download-title">AI 智能推荐</h3>
+                    <h3 class="ai-download-title">AI Recommendations</h3>
                     <p class="ai-download-description">首次使用需要下载AI模型，为您提供智能推荐服务</p>
                 </div>
             </div>
@@ -3841,7 +3841,7 @@ class SearchModal {
                     if (downloadingAI) {
                         downloadingAI.remove();
                     }
-                    this.showAIError(`下载失败: ${response.error}`);
+                    this.showAIError(`Download failed: ${response.error}`);
                 }
             } catch (error) {
                 console.error('❌ 下载请求异常:', error);
@@ -3925,7 +3925,7 @@ class SearchModal {
                 <div class="ai-status-text">AI智能推荐已就绪，点击开始推荐</div>
             </div>
             <div class="ai-actions">
-                <button id="aiCheckBtn" class="ai-btn ai-btn-primary">开始AI推荐</button>
+                <button id="aiCheckBtn" class="ai-btn ai-btn-primary">Start AI</button>
                 <button id="aiCloseBtn" class="ai-btn ai-btn-secondary">关闭</button>
             </div>
         `;
