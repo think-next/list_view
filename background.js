@@ -480,6 +480,17 @@ function groupTabsByWindow(tabs, query) {
 
     // 转换为数组并按窗口ID排序
     const result = Array.from(windowMap.values()).sort((a, b) => a.windowId - b.windowId);
+
+    // 对每个窗口组内的tabs按URL排序
+    result.forEach(group => {
+        group.tabs.sort((a, b) => {
+            // 去掉URL中?的部分进行排序
+            const urlA = a.url.split('?')[0].toLowerCase();
+            const urlB = b.url.split('?')[0].toLowerCase();
+            return urlA.localeCompare(urlB);
+        });
+    });
+
     console.log('分组结果:', result);
     return result;
 }

@@ -96,21 +96,27 @@ class SearchModal {
         style.textContent = `
             /* 模态框遮罩层 - 半透明背景 */
             .modal-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
                 background-color: rgba(0, 0, 0, 0.6);
                 display: flex;
                 align-items: flex-start; /* 改为顶部对齐 */
                 justify-content: center;
-                z-index: 999999;
+                z-index: 999999 !important;
                 opacity: 0;
                 visibility: hidden;
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 backdrop-filter: blur(4px);
                 padding-top: 6.67vh; /* 距离顶部1/6的位置 */
+                /* 确保不受网页样式影响 */
+                margin: 0 !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+                transform: none !important;
+                box-sizing: border-box !important;
             }
 
             .modal-overlay.show {
@@ -133,6 +139,11 @@ class SearchModal {
                     display: flex;
                     flex-direction: column;
                     margin-top: 16.67vh; /* 距离顶部1/6的位置 */
+                    /* 确保居中定位 */
+                    margin-left: auto !important;
+                    margin-right: auto !important;
+                    position: relative !important;
+                    box-sizing: border-box !important;
                     border: 1px solid rgba(255, 255, 255, 0.2);
                     position: relative;
                     z-index: 1000000;
@@ -2086,7 +2097,14 @@ class SearchModal {
 
         // 将所有标签页展平到results数组中，用于键盘导航
         windowGroups.forEach(group => {
-            group.tabs.forEach(tab => {
+            // 对tabs进行排序（与显示逻辑保持一致）
+            const sortedTabs = [...group.tabs].sort((a, b) => {
+                const urlA = a.url.split('?')[0].toLowerCase();
+                const urlB = b.url.split('?')[0].toLowerCase();
+                return urlA.localeCompare(urlB);
+            });
+
+            sortedTabs.forEach(tab => {
                 this.results.push({
                     ...tab,
                     type: 'tab',
@@ -2112,7 +2130,15 @@ class SearchModal {
         }
 
         const groupsHTML = windowGroups.map((group, groupIndex) => {
-            const tabsHTML = group.tabs.map((tab, tabIndex) => {
+            // 对当前窗口组内的tabs按URL排序
+            const sortedTabs = [...group.tabs].sort((a, b) => {
+                // 去掉URL中?的部分进行排序
+                const urlA = a.url.split('?')[0].toLowerCase();
+                const urlB = b.url.split('?')[0].toLowerCase();
+                return urlA.localeCompare(urlB);
+            });
+
+            const tabsHTML = sortedTabs.map((tab, tabIndex) => {
                 const truncatedUrl = this.truncateUrl(tab.url);
                 const isActive = tab.active ? 'active' : '';
                 const isPinned = tab.pinned ? 'pinned' : '';
