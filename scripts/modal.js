@@ -1869,14 +1869,21 @@ class SearchModal {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 const query = e.target.value.trim();
-                console.log('🔍 用户输入触发搜索:', query);
+                console.log('🔍 用户输入触发搜索:', query, '当前过滤器:', this.activeFilter);
 
                 // 自动触发搜索
                 if (query.length > 0) {
                     this.searchBookmarksAndHistory(query);
                 } else {
-                    // 如果输入为空，显示欢迎信息
-                    this.showWelcomeMessage();
+                    // 如果输入为空，根据当前过滤器状态显示相应内容
+                    if (this.activeFilter === 'history') {
+                        // 历史记录模式下，空输入时显示最近20条历史记录
+                        console.log('历史记录模式下输入为空，显示最近20条历史记录');
+                        this.loadRecentHistory();
+                    } else {
+                        // 其他模式下显示欢迎信息
+                        this.showWelcomeMessage();
+                    }
                 }
 
                 // 同时处理输入变化（用于AI推荐等）
@@ -1935,7 +1942,13 @@ class SearchModal {
     // 搜索功能
     async searchBookmarksAndHistory(query) {
         if (!query.trim()) {
-            this.showWelcomeMessage();
+            // 空查询时，根据当前过滤器状态显示相应内容
+            if (this.activeFilter === 'history') {
+                console.log('历史记录模式下空查询，显示最近20条历史记录');
+                this.loadRecentHistory();
+            } else {
+                this.showWelcomeMessage();
+            }
             return;
         }
 
@@ -2062,9 +2075,38 @@ class SearchModal {
                 // 没有分组过滤，显示所有书签
                 this.loadAllBookmarks();
             }
+        } else if (this.activeFilter === 'history') {
+            // 如果是历史记录模式，显示最近20条历史记录
+            console.log('历史记录模式下显示欢迎信息，加载最近20条历史记录');
+            this.loadRecentHistory();
         } else {
             // 默认显示list tab内容（与插件启动时相同）
             this.loadAllTabs();
+        }
+    }
+
+    // 加载最近的历史记录
+    async loadRecentHistory() {
+        try {
+            console.log('开始加载最近的历史记录');
+            this.showLoading();
+
+            // 通过消息传递请求background script获取最近的历史记录
+            const response = await this.sendMessageToBackground({
+                action: 'getRecentHistory',
+                limit: 20
+            });
+
+            if (response.success) {
+                console.log('获取历史记录成功:', response.results);
+                this.displayResults(response.results);
+            } else {
+                console.error('获取历史记录失败:', response.error);
+                this.showError('获取历史记录失败，请重试');
+            }
+        } catch (error) {
+            console.error('加载历史记录出错:', error);
+            this.showError('加载历史记录时出现错误');
         }
     }
 
@@ -2873,6 +2915,12 @@ class SearchModal {
             console.log('选择书签过滤器，立即显示所有书签');
             this.loadAllBookmarks();
         }
+
+        // 如果是历史记录过滤器，立即显示最近20条历史记录
+        if (filter === 'history') {
+            console.log('选择历史记录过滤器，立即显示最近20条历史记录');
+            this.loadRecentHistory();
+        }
     }
 
     // 更新过滤器标签
@@ -3118,9 +3166,6 @@ class SearchModal {
                     }
                 }
             });
-
-            // 设置tabindex以支持键盘导航
-            item.setAttribute('tabindex', '0');
         });
 
         // 绑定删除书签按钮事件

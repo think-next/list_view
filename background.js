@@ -243,6 +243,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({ success: false, error: error.message });
             });
         return true;
+    } else if (request.action === 'getRecentHistory') {
+        // 处理获取最近历史记录请求
+        handleGetRecentHistoryRequest(request.limit, sendResponse)
+            .catch(error => {
+                console.error('❌ handleGetRecentHistoryRequest 执行失败:', error);
+                sendResponse({ success: false, error: error.message });
+            });
+        return true;
     }
 
     // 未知消息类型
@@ -1530,6 +1538,71 @@ async function handleCreateTabRequest(url, sendResponse) {
         sendResponse({ success: true, tabId: tab.id });
     } catch (error) {
         console.error('❌ 创建标签页失败:', error);
+        sendResponse({ success: false, error: error.message });
+    }
+}
+
+// 处理获取最近历史记录请求
+async function handleGetRecentHistoryRequest(limit, sendResponse) {
+    try {
+        console.log('📚 开始获取最近历史记录，限制:', limit);
+
+        const endTime = Date.now();
+        const startTime = endTime - (7 * 24 * 60 * 60 * 1000); // 最近7天
+
+        chrome.history.search({
+            text: '',
+            startTime: startTime,
+            endTime: endTime,
+            maxResults: limit * 3 // 获取更多结果用于去重
+        }, (historyItems) => {
+            if (chrome.runtime.lastError) {
+                console.error('历史记录搜索错误:', chrome.runtime.lastError);
+                sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                return;
+            }
+
+            console.log(`📚 获取到 ${historyItems.length} 条历史记录`);
+
+            // 按访问时间排序（从新到旧）
+            historyItems.sort((a, b) => b.lastVisitTime - a.lastVisitTime);
+
+            // URL去重：去掉?之前的部分进行去重
+            const urlMap = new Map();
+            const uniqueHistoryItems = [];
+
+            for (const item of historyItems) {
+                if (!item.url) continue;
+
+                // 去掉URL中?之前的部分作为去重键
+                const urlKey = item.url.split('?')[0];
+
+                if (!urlMap.has(urlKey)) {
+                    urlMap.set(urlKey, true);
+                    uniqueHistoryItems.push({
+                        title: item.title,
+                        url: item.url,
+                        type: 'history',
+                        lastVisitTime: item.lastVisitTime,
+                        visitCount: item.visitCount
+                    });
+
+                    // 达到限制数量就停止
+                    if (uniqueHistoryItems.length >= limit) {
+                        break;
+                    }
+                }
+            }
+
+            console.log(`📚 去重后得到 ${uniqueHistoryItems.length} 条历史记录`);
+
+            sendResponse({
+                success: true,
+                results: uniqueHistoryItems
+            });
+        });
+    } catch (error) {
+        console.error('❌ 获取最近历史记录失败:', error);
         sendResponse({ success: false, error: error.message });
     }
 }
