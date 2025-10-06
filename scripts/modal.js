@@ -948,6 +948,20 @@ class SearchModal {
                 flex-shrink: 0;
             }
 
+            /* AI标签特殊样式 - 橙黄色 */
+            .ai-result-item .result-type,
+            .ai-loading-item .result-type {
+                background: #f59e0b;
+                color: white;
+            }
+
+            /* AI错误图标样式 - 橙黄色背景 */
+            .ai-error-type {
+                background: #f59e0b;
+                color: white;
+                font-size: 12px;
+            }
+
             .result-date {
                 font-size: 11px;
                 color: #6c757d;
@@ -982,39 +996,19 @@ class SearchModal {
                 font-size: 11px;
             }
 
-            /* AI推荐样式 */
+            /* AI推荐样式 - 与默认搜索结果风格统一 */
             .ai-recommendations {
-                background: #f1f8ff;
-                border-radius: 12px;
-                margin-bottom: 20px;
-                overflow: hidden;
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-            }
-
-            .ai-header {
                 display: flex;
-                align-items: center;
-                padding: 16px 20px;
-                background: rgba(255, 255, 255, 0.1);
-                color: white;
-                font-weight: 600;
-                font-size: 14px;
-            }
-
-            .ai-icon {
-                font-size: 18px;
-                margin-right: 8px;
-            }
-
-            .ai-title {
-                flex: 1;
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 8px;
             }
 
             .ai-spinner {
                 width: 16px;
                 height: 16px;
-                border: 2px solid rgba(255, 255, 255, 0.3);
-                border-top: 2px solid white;
+                border: 2px solid #e2e8f0;
+                border-top: 2px solid #2563eb;
                 border-radius: 50%;
                 animation: spin 1s linear infinite;
                 margin-left: 8px;
@@ -1025,68 +1019,101 @@ class SearchModal {
                 100% { transform: rotate(360deg); }
             }
 
-            .ai-results {
-                padding: 0;
-            }
-
-            .ai-result-item {
-                display: flex;
-                align-items: center;
-                padding: 16px 20px;
-                background: white;
-                border-bottom: 1px solid #f0f0f0;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                position: relative;
-            }
-
-            .ai-result-item:last-child {
-                border-bottom: none;
-            }
-
-            .ai-result-item:hover {
-                background: #f8fafc;
-                transform: translateX(4px);
-            }
-
-            .ai-result-content {
-                flex: 1;
-                min-width: 0;
-            }
-
-            .ai-result-title {
-                font-weight: 600;
-                color: #475569;
-                margin-bottom: 4px;
-                font-size: 14px;
-                line-height: 1.4;
-            }
-
+            /* AI推荐原因样式 */
             .ai-result-reason {
                 color: #666;
                 font-size: 12px;
-                margin-bottom: 4px;
+                margin-top: 4px;
                 line-height: 1.3;
+                font-style: italic;
             }
 
-            .ai-result-url {
-                color: #999;
-                font-size: 11px;
-                font-family: monospace;
-                white-space: nowrap;
+            .result-item.selected .ai-result-reason {
+                color: rgba(255, 255, 255, 0.7);
+            }
+
+            /* AI加载项样式 */
+            .ai-loading-item {
+                opacity: 0.7;
+                cursor: default;
+            }
+
+            .ai-loading-item:hover {
+                transform: none;
+                box-shadow: none;
+            }
+
+            /* AI错误项样式 */
+            .ai-error-item {
+                cursor: default;
+            }
+
+            .ai-error-item:hover {
+                transform: none;
+                box-shadow: none;
+            }
+
+            /* Terminal样式状态显示（简洁、低调） */
+            .ai-terminal-status {
+                margin-top: 8px;
+                background: #f9fafb; /* light gray */
+                border: 1px solid #e5e7eb; /* soft border */
+                border-radius: 8px;
                 overflow: hidden;
-                text-overflow: ellipsis;
+                font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+                width: 100%;
             }
 
-            .ai-result-badge {
-                background: #f1f8ff;
-                color: white;
-                padding: 4px 8px;
-                border-radius: 12px;
-                font-size: 10px;
+            .terminal-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 10px;
+                background: #ffffff;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            .terminal-title {
+                color: #374151; /* gray-700 */
+                font-size: 12px;
                 font-weight: 600;
-                margin-left: 12px;
-                white-space: nowrap;
+            }
+
+            .terminal-close-btn {
+                background: transparent;
+                color: #6b7280; /* gray-500 */
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                width: 20px;
+                height: 20px;
+                font-size: 12px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background 0.15s ease, color 0.15s ease;
+            }
+
+            .terminal-close-btn:hover {
+                background: #f3f4f6; /* gray-100 */
+                color: #374151;
+            }
+
+            .terminal-content {
+                padding: 10px;
+                max-height: 160px;
+                overflow-y: auto;
+                background: #ffffff;
+            }
+
+            .terminal-content pre {
+                margin: 0;
+                color: #374151; /* neutral text */
+                font-size: 12px;
+                line-height: 1.5;
+                white-space: pre-wrap;
+                word-break: break-word;
             }
 
             /* AI下载样式 */
@@ -1247,7 +1274,7 @@ class SearchModal {
             .ai-detection-icon {
                 width: 32px;
                 height: 32px;
-                background: #2563eb;
+                background: #f59e0b;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
@@ -1268,20 +1295,21 @@ class SearchModal {
                 padding: 0;
             }
 
+            .ai-status-row {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 0;
+            }
+
             .ai-status-container {
                 display: flex;
                 align-items: center;
-                margin-bottom: 16px;
                 padding: 12px;
                 background: #ffffff;
                 border: 1px solid #e2e8f0;
                 border-radius: 8px;
-            }
-
-            .ai-status-icon {
-                font-size: 18px;
-                margin-right: 10px;
-                flex-shrink: 0;
+                flex: 1;
             }
 
             .ai-status-text {
@@ -1296,34 +1324,35 @@ class SearchModal {
                 display: flex;
                 gap: 8px;
                 justify-content: flex-end;
+                margin-bottom: 0;
             }
 
             .ai-btn {
-                padding: 8px 16px;
-                border-radius: 6px;
-                font-weight: 500;
-                font-size: 13px;
+                padding: 12px 20px;
+                border-radius: 10px;
+                font-weight: 600;
+                font-size: 14px;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                border: 1px solid;
+                border: none;
                 display: flex;
                 align-items: center;
                 gap: 6px;
                 min-width: 100px;
                 justify-content: center;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             }
 
             .ai-btn-primary {
-                background: #2563eb;
-                color: white;
-                border-color: #2563eb;
+                background: #fef3c7;
+                color: #d97706;
+                border: none;
             }
 
             .ai-btn-primary:hover {
-                background: #2563eb;
-                border-color: #2563eb;
-                transform: translateY(-1px);
-                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+                background: #fef3c7;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(217, 119, 6, 0.4);
             }
 
             .ai-btn-primary:active {
@@ -1523,19 +1552,14 @@ class SearchModal {
             }
 
             .ai-error {
-                background: #fef2f2;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
             }
 
             .ai-error-content {
-                padding: 16px 20px;
-                background: white;
+                padding: 8px 0 0 0;
                 color: #475569;
-            }
-
-            .ai-error-content p {
-                margin: 0 0 12px 0;
-                font-size: 14px;
-                line-height: 1.4;
             }
 
             .ai-error-actions {
@@ -1545,7 +1569,7 @@ class SearchModal {
             }
 
             .ai-settings-btn, .ai-check-btn, .ai-permission-btn {
-                background: #fef2f2;
+                background: #2563eb;
                 color: white;
                 border: none;
                 padding: 8px 16px;
@@ -1556,17 +1580,26 @@ class SearchModal {
                 transition: all 0.2s ease;
             }
 
+            .ai-settings-btn:hover, .ai-check-btn:hover, .ai-permission-btn:hover {
+                background: #1d4ed8;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+            }
+
             .ai-check-btn {
-                background: #f1f8ff;
+                background: #059669;
+            }
+
+            .ai-check-btn:hover {
+                background: #047857;
             }
 
             .ai-permission-btn {
-                background: #dcfce7;
+                background: #dc2626;
             }
 
-            .ai-settings-btn:hover, .ai-check-btn:hover, .ai-permission-btn:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            .ai-permission-btn:hover {
+                background: #b91c1c;
             }
 
             /* 历史统计区域样式 */
@@ -2331,7 +2364,7 @@ class SearchModal {
             } else {
                 console.log('❌ AI failed:', response.error);
                 this.hideAILoadingState();
-                this.showAIError(`AI failed: ${response.error || 'Unknown error'}`);
+                this.showAIError(response.error || 'Unknown error');
             }
         } catch (error) {
             console.error('💥 AI error:', error);
@@ -2391,10 +2424,14 @@ class SearchModal {
         const aiLoading = document.createElement('div');
         aiLoading.className = 'ai-recommendations ai-loading';
         aiLoading.innerHTML = `
-            <div class="ai-header">
-                <span class="ai-icon">🤖</span>
-                <span class="ai-title">AI analyzing your intent...</span>
-                <div class="ai-spinner"></div>
+            <div class="result-item ai-loading-item">
+                <div class="result-header">
+                    <div class="result-header-left">
+                        <span class="result-type">AI</span>
+                        <span class="result-title">AI analyzing your intent...</span>
+                        <div class="ai-spinner"></div>
+                    </div>
+                </div>
             </div>
         `;
 
@@ -2424,22 +2461,18 @@ class SearchModal {
         const aiRecommendations = document.createElement('div');
         aiRecommendations.className = 'ai-recommendations';
         aiRecommendations.innerHTML = `
-            <div class="ai-header">
-                <span class="ai-icon">🤖</span>
-                <span class="ai-title">AI Recommendations</span>
-            </div>
-            <div class="ai-results">
-                ${recommendations.map((rec, index) => `
-                    <div class="ai-result-item" data-url="${rec.url}">
-                        <div class="ai-result-content">
-                            <div class="ai-result-title">${rec.title}</div>
-                            <div class="ai-result-reason">${rec.reason}</div>
-                            <div class="ai-result-url">${this.truncateUrl(rec.url, 60)}</div>
+            ${recommendations.map((rec, index) => `
+                <div class="result-item ai-result-item" data-url="${rec.url}">
+                    <div class="result-header">
+                        <div class="result-header-left">
+                            <span class="result-type">AI</span>
+                            <span class="result-title">${rec.title}</span>
                         </div>
-                        <div class="ai-result-badge">AI</div>
                     </div>
-                `).join('')}
-            </div>
+                    <div class="result-url">${this.truncateUrl(rec.url, 60)}</div>
+                    <div class="ai-result-reason">${rec.reason}</div>
+                </div>
+            `).join('')}
         `;
 
         // 插入到结果容器顶部
@@ -2477,19 +2510,22 @@ class SearchModal {
         const aiError = document.createElement('div');
         aiError.className = 'ai-recommendations ai-error';
         aiError.innerHTML = `
-            <div class="ai-header">
-                <span class="ai-icon">⚠️</span>
-                <span class="ai-title">AI unavailable</span>
-            </div>
-            <div class="ai-error-content">
-                <p>${message}</p>
-                <div class="ai-error-actions">
-                    <button class="ai-settings-btn" id="aiSettingsBtn">
-                        Open Settings
-                    </button>
-                    <button class="ai-check-btn" id="aiCheckBtn">
-                        Check Status
-                    </button>
+            <div class="result-item ai-error-item">
+                <div class="result-header">
+                    <div class="result-header-left">
+                        <span class="result-type ai-error-type">⚠️</span>
+                        <span class="result-title">${message}</span>
+                    </div>
+                </div>
+                <div class="ai-error-content">
+                    <div class="ai-error-actions">
+                        <button class="ai-settings-btn" id="aiSettingsBtn">
+                            Open Settings
+                        </button>
+                        <button class="ai-check-btn" id="aiCheckBtn">
+                            Check Status
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -2555,21 +2591,21 @@ class SearchModal {
                     });
 
                     if (response.success) {
-                        let message = `AI: ${response.enabled ? 'Enabled' : 'Disabled'}\nPermission: ${response.permission ? 'Granted' : 'Not granted'}`;
+                        let message = `AI Recommendations: ${response.enabled ? 'Enabled' : 'Disabled'}\nAI Permission: ${response.permission ? 'Granted' : 'Not granted'}`;
 
                         if (!response.permission) {
-                            message += `\n\n权限错误：${response.permissionError || '未知错误'}`;
-                            message += '\n\n可能的解决方案：\n';
-                            message += '1. 检查Chrome版本是否支持AI功能\n';
-                            message += '2. 在chrome://extensions/ 中检查扩展权限\n';
-                            message += '3. 在chrome://flags/ 中启用AI相关实验性功能\n';
-                            message += '4. 尝试重启Chrome浏览器\n';
-                            message += '5. 检查Chrome是否是最新版本';
+                            message += `\n\nPermission Error: ${response.permissionError || 'Unknown error'}`;
+                            message += '\n\nPossible Solutions:\n';
+                            message += '1. Check Chrome version supports AI features\n';
+                            message += '2. Check extension permissions in chrome://extensions/\n';
+                            message += '3. Enable AI experimental features in chrome://flags/\n';
+                            message += '4. Try restarting Chrome browser\n';
+                            message += '5. Ensure Chrome is up to date';
                         }
 
-                        alert(message);
+                        this.showTerminalStatus(message);
                     } else {
-                        alert('Check failed: ' + response.error);
+                        this.showTerminalStatus('Check failed: ' + response.error);
                     }
                 } catch (error) {
                     console.error('检查AI状态失败:', error);
@@ -2581,7 +2617,54 @@ class SearchModal {
         }
     }
 
+    // 显示Terminal样式状态信息
+    showTerminalStatus(message) {
+        // 移除已存在的状态显示
+        const existingStatus = this.modal.querySelector('.ai-terminal-status');
+        if (existingStatus) {
+            existingStatus.remove();
+        }
 
+        // 创建terminal样式容器
+        const terminalStatus = document.createElement('div');
+        terminalStatus.className = 'ai-terminal-status';
+        terminalStatus.innerHTML = `
+            <div class="terminal-header">
+                <span class="terminal-title">AI Status Check</span>
+                <button class="terminal-close-btn" id="terminalCloseBtn">×</button>
+            </div>
+            <div class="terminal-content">
+                <pre>${message}</pre>
+            </div>
+        `;
+
+        // 找到AI错误容器的父块（保持按钮区域不变高），插入到整个状态行下方
+        const aiErrorContainer = this.modal.querySelector('.ai-error-item');
+        if (aiErrorContainer && aiErrorContainer.parentNode) {
+            aiErrorContainer.parentNode.insertBefore(terminalStatus, aiErrorContainer.nextSibling);
+        } else {
+            // 回退：若未找到，仍插在按钮后方
+            const checkBtn = this.modal.querySelector('#aiCheckBtn');
+            if (checkBtn && checkBtn.parentNode) {
+                checkBtn.parentNode.insertBefore(terminalStatus, checkBtn.nextSibling);
+            }
+        }
+
+        // 绑定关闭按钮事件
+        const closeBtn = terminalStatus.querySelector('#terminalCloseBtn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                terminalStatus.remove();
+            });
+        }
+
+        // 5秒后自动关闭
+        setTimeout(() => {
+            if (terminalStatus.parentNode) {
+                terminalStatus.remove();
+            }
+        }, 5000);
+    }
 
     // 显示搜索结果
     displayResults(results) {
@@ -2599,8 +2682,7 @@ class SearchModal {
         if (results.length === 0) {
             resultsContainer.innerHTML = `
                 <div class="no-results">
-                    <p>未找到匹配的结果</p>
-                    <p>尝试使用不同的关键词</p>
+                    <p>No results. Try different keywords.</p>
                 </div>
             `;
 
@@ -2698,6 +2780,12 @@ class SearchModal {
             totalItems = bookmarkItems.length;
         }
 
+        // 在默认搜索模式下，需要包含AI推荐项
+        if (!this.activeFilter) {
+            const aiItems = this.modal.querySelectorAll('.ai-result-item');
+            totalItems += aiItems.length;
+        }
+
         if (totalItems === 0) return;
 
         // 移除之前的选中状态
@@ -2718,18 +2806,45 @@ class SearchModal {
 
     // 更新选中项
     updateSelectedItem(index) {
-        const resultItems = this.modal.querySelectorAll('.result-item');
+        const resultItems = this.modal.querySelectorAll('.result-item:not(.ai-result-item)');
         const bookmarkItems = this.modal.querySelectorAll('.bookmark-item');
+        const aiItems = this.modal.querySelectorAll('.ai-result-item');
 
-        // 处理搜索结果项
-        resultItems.forEach((item, i) => {
-            if (i === index) {
-                item.classList.add('selected');
-                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            } else {
-                item.classList.remove('selected');
-            }
-        });
+        // 在默认搜索模式下，AI推荐项优先显示
+        if (!this.activeFilter && aiItems.length > 0) {
+            const aiItemsCount = aiItems.length;
+
+            // 处理AI推荐项
+            aiItems.forEach((item, i) => {
+                if (i === index) {
+                    item.classList.add('selected');
+                    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+
+            // 处理常规搜索结果项（调整索引）
+            resultItems.forEach((item, i) => {
+                const adjustedIndex = i + aiItemsCount;
+                if (adjustedIndex === index) {
+                    item.classList.add('selected');
+                    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        } else {
+            // 其他模式下的正常处理
+            resultItems.forEach((item, i) => {
+                if (i === index) {
+                    item.classList.add('selected');
+                    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
 
         // 处理书签项
         bookmarkItems.forEach((item, i) => {
@@ -2744,8 +2859,28 @@ class SearchModal {
 
     // 打开选中的结果
     openSelectedResult() {
-        if (this.selectedIndex >= 0 && this.selectedIndex < this.results.length) {
-            const selectedResult = this.results[this.selectedIndex];
+        const aiItems = this.modal.querySelectorAll('.ai-result-item');
+        const aiItemsCount = aiItems.length;
+
+        // 在默认搜索模式下，优先处理AI推荐项
+        if (!this.activeFilter && aiItemsCount > 0 && this.selectedIndex < aiItemsCount) {
+            const selectedAIItem = aiItems[this.selectedIndex];
+            const url = selectedAIItem.dataset.url;
+            if (url) {
+                window.open(url, '_blank');
+                this.close();
+            }
+            return;
+        }
+
+        // 处理常规搜索结果项
+        let adjustedIndex = this.selectedIndex;
+        if (!this.activeFilter && aiItemsCount > 0) {
+            adjustedIndex = this.selectedIndex - aiItemsCount;
+        }
+
+        if (adjustedIndex >= 0 && adjustedIndex < this.results.length) {
+            const selectedResult = this.results[adjustedIndex];
             if (selectedResult.type === 'tab') {
                 // 标签页类型：切换到对应标签页
                 this.switchToTab(selectedResult.tabId, selectedResult.windowId);
@@ -3860,7 +3995,7 @@ class SearchModal {
                 if (downloadingAI) {
                     downloadingAI.remove();
                 }
-                this.showAIError(`下载请求异常: ${error.message}`);
+                this.showAIError(`Request failed: ${error.message}`);
             }
         });
     }
@@ -3928,15 +4063,15 @@ class SearchModal {
         aiDetection.innerHTML = `
             <div class="ai-detection-header">
                 <div class="ai-detection-icon">🤖</div>
-                <div class="ai-detection-title">AI智能推荐</div>
+                <div class="ai-detection-title">AI Recommendations</div>
             </div>
-            <div class="ai-status-container">
-                <div class="ai-status-icon">🤖</div>
-                <div class="ai-status-text">AI智能推荐已就绪，点击开始推荐</div>
-            </div>
-            <div class="ai-actions">
-                <button id="aiCheckBtn" class="ai-btn ai-btn-primary">Start AI</button>
-                <button id="aiCloseBtn" class="ai-btn ai-btn-secondary">关闭</button>
+            <div class="ai-status-row">
+                <div class="ai-status-container">
+                    <div class="ai-status-text">AI ready, click to start recommendations</div>
+                </div>
+                <div class="ai-actions">
+                    <button id="aiCheckBtn" class="ai-btn ai-btn-primary">Start AI</button>
+                </div>
             </div>
         `;
 
@@ -3959,20 +4094,10 @@ class SearchModal {
     // 绑定AI检测弹框按钮
     bindAIDetectionButtons(query) {
         const checkBtn = this.modal.querySelector('#aiCheckBtn');
-        const closeBtn = this.modal.querySelector('#aiCloseBtn');
 
         if (checkBtn) {
             checkBtn.addEventListener('click', () => {
                 this.getAIRecommendations(query);
-                const aiDetection = this.modal.querySelector('.ai-detection');
-                if (aiDetection) {
-                    aiDetection.remove();
-                }
-            });
-        }
-
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
                 const aiDetection = this.modal.querySelector('.ai-detection');
                 if (aiDetection) {
                     aiDetection.remove();

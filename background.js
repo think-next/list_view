@@ -843,7 +843,7 @@ async function handleAIRecommendationRequest(query, sendResponse) {
         // 检查是否启用了AI推荐
         console.log('🔍 正在获取AI设置...');
         const settings = await new Promise((resolve, reject) => {
-            chrome.storage.local.get(['aiRecommendation'], (result) => {
+            chrome.storage.local.get(['aiRecommendation', 'aiTimeout'], (result) => {
                 console.log('🔍 存储API返回结果:', result);
                 if (chrome.runtime.lastError) {
                     console.error('❌ 存储API错误:', chrome.runtime.lastError);
@@ -857,10 +857,13 @@ async function handleAIRecommendationRequest(query, sendResponse) {
 
         // 默认启用AI推荐（如果用户未设置过）
         const aiRecommendationEnabled = settings.aiRecommendation !== false;
+        // 默认AI超时时间30000ms（如果用户未设置过）
+        const aiTimeout = settings.aiTimeout || 30000;
 
         console.log('AI推荐设置检查:', {
             aiRecommendation: settings.aiRecommendation,
-            aiRecommendationEnabled: aiRecommendationEnabled
+            aiRecommendationEnabled: aiRecommendationEnabled,
+            aiTimeout: aiTimeout
         });
 
         if (!aiRecommendationEnabled) {
@@ -1077,7 +1080,7 @@ ${JSON.stringify(limitedContextData, null, 2)}
 
             // 添加超时机制，避免AI调用卡住太久
             const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error('AI调用超时（30秒）')), 30000);
+                setTimeout(() => reject(new Error(`AI timeout after ${aiTimeout} ms`)), aiTimeout);
             });
 
             aiResponse = await Promise.race([
@@ -1100,7 +1103,7 @@ ${JSON.stringify(limitedContextData, null, 2)}
             // 发送错误响应
             sendResponse({
                 success: false,
-                error: `AI调用失败: ${promptError.message}`
+                error: `${promptError.message}`
             });
             return;
         }

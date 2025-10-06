@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const contentSections = document.querySelectorAll('.content-section');
     const maxResultsInput = document.getElementById('maxResults');
     const aiRecommendationToggle = document.getElementById('aiRecommendation');
+    const aiTimeoutInput = document.getElementById('aiTimeout');
     const saveBtn = document.getElementById('saveSettings');
     const statusMessage = document.getElementById('statusMessage');
 
@@ -28,15 +29,38 @@ document.addEventListener('DOMContentLoaded', function () {
         this.value = isNaN(num) ? 12 : num;
     });
 
+    // AI超时时间边界检查
+    aiTimeoutInput.addEventListener('input', function () {
+        const num = Math.max(100, Math.min(3000, parseInt(this.value || '30000', 10)));
+        this.value = isNaN(num) ? 30000 : num;
+    });
+
     // 保存设置
     saveBtn.addEventListener('click', function () {
-        const maxResults = parseInt(maxResultsInput.value);
+        let maxResults = parseInt(maxResultsInput.value);
         const aiRecommendation = aiRecommendationToggle.checked;
+        let aiTimeout = parseInt(aiTimeoutInput.value);
+
+        // 边界检查
+        if (isNaN(maxResults) || maxResults < 5) {
+            maxResults = 5;
+        } else if (maxResults > 50) {
+            maxResults = 50;
+        }
+        maxResultsInput.value = maxResults;
+
+        if (isNaN(aiTimeout) || aiTimeout < 100) {
+            aiTimeout = 100;
+        } else if (aiTimeout > 3000) {
+            aiTimeout = 3000;
+        }
+        aiTimeoutInput.value = aiTimeout;
 
         // 保存到chrome存储
         chrome.storage.local.set({
             maxResults: maxResults,
-            aiRecommendation: aiRecommendation
+            aiRecommendation: aiRecommendation,
+            aiTimeout: aiTimeout
         }, function () {
             if (chrome.runtime.lastError) {
                 showStatus('保存失败: ' + chrome.runtime.lastError.message, 'error');
@@ -48,12 +72,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 加载设置
     function loadSettings() {
-        chrome.storage.local.get(['maxResults', 'aiRecommendation'], function (result) {
+        chrome.storage.local.get(['maxResults', 'aiRecommendation', 'aiTimeout'], function (result) {
             if (result.maxResults) {
                 maxResultsInput.value = result.maxResults;
             }
             // 默认启用AI推荐（如果用户未设置过）
             aiRecommendationToggle.checked = result.aiRecommendation !== false;
+            // 默认AI超时时间30000ms（如果用户未设置过）
+            aiTimeoutInput.value = result.aiTimeout || 30000;
         });
     }
 
