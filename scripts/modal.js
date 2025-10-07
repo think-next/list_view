@@ -1883,18 +1883,14 @@ class SearchModal {
 
         // 搜索按钮点击
         searchBtn.addEventListener('click', async () => {
-            console.log('🖱️ 搜索按钮被点击');
             const query = searchInput.value.trim();
-            console.log('🔍 搜索查询:', query);
             await this.searchBookmarksAndHistory(query);
         });
 
         // 回车搜索
         searchInput.addEventListener('keypress', async (e) => {
             if (e.key === 'Enter') {
-                console.log('⌨️ Enter键被按下');
                 const query = searchInput.value.trim();
-                console.log('🔍 搜索查询:', query);
                 await this.searchBookmarksAndHistory(query);
             }
         });
@@ -1905,7 +1901,6 @@ class SearchModal {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 const query = e.target.value.trim();
-                console.log('🔍 用户输入触发搜索:', query, '当前过滤器:', this.activeFilter);
 
                 // 自动触发搜索
                 if (query.length > 0) {
@@ -2908,11 +2903,8 @@ class SearchModal {
 
     // 处理输入变化
     handleInputChange(query) {
-        console.log('输入变化:', query, '当前过滤器:', this.activeFilter);
-
         // 检查是否以 "list" 开头
         if (query === 'list') {
-            console.log('检测到list关键词，显示过滤器下拉列表');
             this.showFilterDropdown();
             return;
         }
@@ -2956,9 +2948,7 @@ class SearchModal {
 
     // 显示过滤器下拉列表
     showFilterDropdown() {
-        console.log('显示过滤器下拉列表');
         const dropdown = this.modal.querySelector('#filterDropdown');
-        console.log('找到下拉列表元素:', dropdown);
 
         if (!dropdown) {
             console.error('未找到过滤器下拉列表元素');
@@ -2985,13 +2975,11 @@ class SearchModal {
 
         dropdown.style.display = 'block';
         this.filterDropdown = dropdown;
-        console.log('下拉列表已显示');
 
         // 添加点击事件
         dropdown.querySelectorAll('.filter-option').forEach(option => {
             option.addEventListener('click', (e) => {
                 const filter = e.currentTarget.dataset.filter;
-                console.log('选择过滤器:', filter);
                 this.selectFilter(filter);
             });
         });

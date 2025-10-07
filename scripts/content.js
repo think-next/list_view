@@ -3,8 +3,6 @@ let searchModal = null;
 
 // 监听来自background script的消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log('Content script收到消息:', request);
-
     if (request.action === 'ping') {
         // 响应ping消息，确认content script已加载
         sendResponse({ success: true, message: 'Content script已就绪' });
@@ -27,8 +25,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // 显示模态框
 function showModal() {
     try {
-        console.log('开始显示模态框...');
-
         // 检查页面是否支持模态框
         if (!isPageCompatible()) {
             console.warn('当前页面不支持模态框');
@@ -37,7 +33,6 @@ function showModal() {
 
         // 如果模态框已存在，先移除
         if (searchModal) {
-            console.log('移除现有模态框');
             searchModal.close();
             searchModal = null;
         }
@@ -50,19 +45,14 @@ function showModal() {
         }
 
         // 创建新的模态框实例
-        console.log('创建新模态框实例');
         searchModal = new SearchModal();
 
         // 显示模态框
         searchModal.show();
-        console.log('模态框显示完成');
 
     } catch (error) {
         console.error('显示模态框失败:', error);
-        console.error('错误堆栈:', error.stack);
-
         // 尝试备用方案：直接创建简单的模态框
-        console.log('尝试备用方案...');
         createFallbackModal();
     }
 }
@@ -100,8 +90,6 @@ function hideModal() {
 // 备用模态框（如果SearchModal类不可用）
 function createFallbackModal() {
     try {
-        console.log('创建备用模态框...');
-
         // 移除现有模态框
         const existingModal = document.getElementById('searchModal');
         if (existingModal) {
@@ -146,8 +134,6 @@ function createFallbackModal() {
         modal.appendChild(container);
         document.body.appendChild(modal);
 
-        console.log('备用模态框创建成功');
-
     } catch (fallbackError) {
         console.error('备用模态框创建失败:', fallbackError);
     }
@@ -161,8 +147,6 @@ if (document.readyState === 'loading') {
 }
 
 function init() {
-    console.log('Content script initialized');
-
     // 发送就绪信号给background script
     chrome.runtime.sendMessage({
         action: 'contentScriptReady',

@@ -1,8 +1,5 @@
 // 测试Chrome API是否可用
-console.log('=== Background script loaded from ROOT directory ===');
-console.log('chrome.bookmarks available:', typeof chrome.bookmarks);
-console.log('chrome.history available:', typeof chrome.history);
-console.log('chrome.runtime available:', typeof chrome.runtime);
+console.log('Background script loaded');
 
 // 监听扩展图标点击事件
 chrome.action.onClicked.addListener((tab) => {
@@ -26,11 +23,8 @@ chrome.action.onClicked.addListener((tab) => {
 
                 // 如果content script未加载，尝试注入
                 if (chrome.runtime.lastError.message.includes('Receiving end does not exist')) {
-                    console.log('尝试注入content script...');
                     injectContentScript(tab.id);
                 }
-            } else {
-                console.log('模态框显示成功');
             }
         });
 
@@ -46,15 +40,12 @@ async function injectContentScript(tabId) {
             target: { tabId: tabId },
             files: ['scripts/modal.js', 'scripts/content.js']
         });
-        console.log('Content script注入成功');
 
         // 等待一段时间后重试发送消息
         setTimeout(() => {
             chrome.tabs.sendMessage(tabId, { action: 'showModal' }, (response) => {
                 if (chrome.runtime.lastError) {
                     console.error('重试发送消息失败:', chrome.runtime.lastError.message);
-                } else {
-                    console.log('重试发送消息成功');
                 }
             });
         }, 500);
@@ -67,7 +58,6 @@ async function injectContentScript(tabId) {
 // 监听键盘快捷键命令
 chrome.commands.onCommand.addListener((command) => {
     if (command === '_execute_action') {
-        console.log('快捷键 Ctrl+Shift+L (Windows/Linux) 或 Command+Shift+L (Mac) 被触发');
         handleShortcutTrigger();
     }
 });
@@ -96,11 +86,8 @@ async function handleShortcutTrigger() {
 
                 // 如果content script未加载，尝试注入
                 if (chrome.runtime.lastError.message.includes('Receiving end does not exist')) {
-                    console.log('尝试注入content script...');
                     injectContentScript(tab.id);
                 }
-            } else {
-                console.log('快捷键触发模态框显示成功');
             }
         });
 
@@ -110,16 +97,10 @@ async function handleShortcutTrigger() {
 }
 
 // 监听来自content script的消息
-console.log('🔧 background.js 已加载，正在注册消息监听器...');
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log('📨 消息监听器被触发！收到消息:', request);
-    console.log('📨 发送者:', sender);
-    console.log('📨 消息类型:', typeof request);
-    console.log('📨 消息action:', request.action);
 
     // 同步操作
     if (request.action === 'contentScriptReady') {
-        console.log('Content script已就绪:', request.url);
         sendResponse({ success: true });
         return;
     } else if (request.action === 'openOptionsPage') {
@@ -134,7 +115,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // 处理搜索请求
         handleSearchRequest(request.query, request.filter, sendResponse)
             .catch(error => {
-                console.error('❌ handleSearchRequest 执行失败:', error);
+                console.error('搜索请求失败:', error);
                 sendResponse({ success: false, error: error.message });
             });
         return true; // 保持消息通道开放
@@ -142,7 +123,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // 处理历史统计请求
         handleHistoryStatsRequest(sendResponse)
             .catch(error => {
-                console.error('❌ handleHistoryStatsRequest 执行失败:', error);
+                console.error('历史统计请求失败:', error);
                 sendResponse({ success: false, error: error.message });
             });
         return true; // 保持消息通道开放
@@ -150,7 +131,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // 处理切换标签页请求
         handleSwitchToTabRequest(request.tabId, request.windowId, sendResponse)
             .catch(error => {
-                console.error('❌ handleSwitchToTabRequest 执行失败:', error);
+                console.error('切换标签页失败:', error);
                 sendResponse({ success: false, error: error.message });
             });
         return true; // 保持消息通道开放
@@ -158,7 +139,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // 处理获取所有标签页请求
         handleGetAllTabsRequest(sendResponse)
             .catch(error => {
-                console.error('❌ handleGetAllTabsRequest 执行失败:', error);
+                console.error('获取所有标签页失败:', error);
                 sendResponse({ success: false, error: error.message });
             });
         return true; // 保持消息通道开放
@@ -166,7 +147,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // 处理关闭标签页请求
         handleCloseTabRequest(request.tabId, sendResponse)
             .catch(error => {
-                console.error('❌ handleCloseTabRequest 执行失败:', error);
+                console.error('关闭标签页失败:', error);
                 sendResponse({ success: false, error: error.message });
             });
         return true; // 保持消息通道开放
@@ -174,22 +155,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // 处理获取maxResults配置请求
         handleGetMaxResultsRequest(sendResponse)
             .catch(error => {
-                console.error('❌ handleGetMaxResultsRequest 执行失败:', error);
+                console.error('获取maxResults配置失败:', error);
                 sendResponse({ success: false, error: error.message });
             });
         return true;
     } else if (request.action === 'getAIRecommendations') {
         // 处理AI推荐请求
-        console.log('🎯 进入AI推荐处理分支！');
-        console.log('📨 收到AI推荐请求:', request.query);
-        console.log('📨 请求对象完整内容:', JSON.stringify(request, null, 2));
-        console.log('📨 准备调用 handleAIRecommendationRequest...');
         handleAIRecommendationRequest(request.query, sendResponse)
-            .then(() => {
-                console.log('📨 handleAIRecommendationRequest 调用完成');
-            })
             .catch(error => {
-                console.error('❌ 调用 handleAIRecommendationRequest 时发生异常:', error);
+                console.error('AI推荐请求失败:', error);
                 sendResponse({ success: false, error: error.message });
             });
         return true;
@@ -197,25 +171,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // 处理AI设置检查请求
         handleCheckAISettingsRequest(sendResponse)
             .catch(error => {
-                console.error('❌ handleCheckAISettingsRequest 执行失败:', error);
+                console.error('检查AI设置失败:', error);
                 sendResponse({ success: false, error: error.message });
             });
         return true;
     } else if (request.action === 'downloadAIModel') {
         // 处理AI模型下载请求
-        console.log('🎯 收到downloadAIModel请求，准备调用handleDownloadAIModelRequest');
         handleDownloadAIModelRequest(sendResponse)
             .catch(error => {
-                console.error('❌ handleDownloadAIModelRequest 执行失败:', error);
+                console.error('AI模型下载失败:', error);
                 sendResponse({ success: false, error: error.message });
             });
         return true;
     } else if (request.action === 'mergeWindows') {
         // 处理窗口合并请求
-        console.log('🔄 收到窗口合并请求:', request.sourceWindowId, '->', request.targetWindowId);
         handleMergeWindowsRequest(request.sourceWindowId, request.targetWindowId, sendResponse)
             .catch(error => {
-                console.error('❌ handleMergeWindowsRequest 执行失败:', error);
+                console.error('窗口合并失败:', error);
                 sendResponse({ success: false, error: error.message });
             });
         return true;
@@ -223,7 +195,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // 处理获取所有书签请求
         handleGetAllBookmarksRequest(sendResponse)
             .catch(error => {
-                console.error('❌ handleGetAllBookmarksRequest 执行失败:', error);
+                console.error('获取所有书签失败:', error);
                 sendResponse({ success: false, error: error.message });
             });
         return true;
@@ -231,7 +203,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // 处理删除书签请求
         handleDeleteBookmarkRequest(request.bookmarkId, sendResponse)
             .catch(error => {
-                console.error('❌ handleDeleteBookmarkRequest 执行失败:', error);
+                console.error('删除书签失败:', error);
                 sendResponse({ success: false, error: error.message });
             });
         return true;
@@ -239,7 +211,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // 处理创建标签页请求
         handleCreateTabRequest(request.url, sendResponse)
             .catch(error => {
-                console.error('❌ handleCreateTabRequest 执行失败:', error);
+                console.error('创建标签页失败:', error);
                 sendResponse({ success: false, error: error.message });
             });
         return true;
@@ -247,7 +219,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // 处理获取最近历史记录请求
         handleGetRecentHistoryRequest(request.limit, sendResponse)
             .catch(error => {
-                console.error('❌ handleGetRecentHistoryRequest 执行失败:', error);
+                console.error('获取最近历史记录失败:', error);
                 sendResponse({ success: false, error: error.message });
             });
         return true;
@@ -261,7 +233,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // 处理搜索请求
 async function handleSearchRequest(query, filter, sendResponse) {
     try {
-        console.log('开始搜索:', query, '过滤器:', filter);
 
         let results = [];
 
@@ -337,8 +308,6 @@ async function handleSearchRequest(query, filter, sendResponse) {
 // 搜索书签
 async function searchBookmarks(query) {
     return new Promise(async (resolve, reject) => {
-        console.log('开始搜索书签:', query);
-        console.log('chrome.bookmarks类型:', typeof chrome.bookmarks);
 
         if (typeof chrome.bookmarks === 'undefined') {
             reject(new Error('chrome.bookmarks is undefined'));
@@ -396,7 +365,6 @@ async function searchBookmarks(query) {
                 return title.includes(searchTerm) || url.includes(searchTerm);
             });
 
-            console.log(`书签搜索完成，找到 ${searchResults.length} 个匹配的书签`);
             resolve(searchResults);
         } catch (error) {
             console.error('书签搜索出错:', error);
@@ -453,7 +421,6 @@ async function searchTabs(query) {
 
 // 按窗口分组标签页
 function groupTabsByWindow(tabs, query) {
-    console.log('开始分组标签页，总数:', tabs.length, '查询:', query);
     const windowMap = new Map();
 
     tabs.forEach(tab => {
@@ -499,14 +466,12 @@ function groupTabsByWindow(tabs, query) {
         });
     });
 
-    console.log('分组结果:', result);
     return result;
 }
 
 // 处理切换标签页请求
 async function handleSwitchToTabRequest(tabId, windowId, sendResponse) {
     try {
-        console.log('处理切换标签页请求:', tabId, '窗口:', windowId);
 
         // 先切换到对应窗口
         chrome.windows.update(windowId, { focused: true }, () => {
@@ -530,7 +495,6 @@ async function handleSwitchToTabRequest(tabId, windowId, sendResponse) {
                     return;
                 }
 
-                console.log('成功切换到标签页:', tabId);
                 sendResponse({
                     success: true,
                     message: '标签页切换成功'
@@ -549,7 +513,6 @@ async function handleSwitchToTabRequest(tabId, windowId, sendResponse) {
 // 处理获取所有标签页请求
 async function handleGetAllTabsRequest(sendResponse) {
     try {
-        console.log('开始获取所有标签页');
 
         // 获取所有标签页并按窗口分组
         const windowGroups = await searchTabs('');
@@ -570,7 +533,6 @@ async function handleGetAllTabsRequest(sendResponse) {
 // 处理关闭标签页请求
 async function handleCloseTabRequest(tabId, sendResponse) {
     try {
-        console.log('开始关闭标签页:', tabId);
 
         chrome.tabs.remove(tabId, () => {
             if (chrome.runtime.lastError) {
@@ -582,7 +544,6 @@ async function handleCloseTabRequest(tabId, sendResponse) {
                 return;
             }
 
-            console.log('成功关闭标签页:', tabId);
             sendResponse({
                 success: true,
                 message: '标签页已关闭'
@@ -600,7 +561,6 @@ async function handleCloseTabRequest(tabId, sendResponse) {
 // 处理历史统计请求
 async function handleHistoryStatsRequest(sendResponse) {
     try {
-        console.log('开始获取历史统计...');
 
         // 获取过去7天的历史记录
         const endTime = Date.now();
@@ -833,23 +793,13 @@ async function handleCheckAISettingsRequest(sendResponse) {
 
 // 处理AI推荐请求
 async function handleAIRecommendationRequest(query, sendResponse) {
-    console.log('🚀 handleAIRecommendationRequest 函数被调用！');
-    console.log('🚀 查询参数:', query);
-    console.log('🚀 sendResponse 函数:', typeof sendResponse);
-    console.log('🚀 开始处理AI推荐请求，查询:', query);
-
     try {
-        console.log('🔍 开始检查AI设置...');
-        // 检查是否启用了AI推荐
-        console.log('🔍 正在获取AI设置...');
         const settings = await new Promise((resolve, reject) => {
             chrome.storage.local.get(['aiRecommendation', 'aiTimeout'], (result) => {
-                console.log('🔍 存储API返回结果:', result);
                 if (chrome.runtime.lastError) {
-                    console.error('❌ 存储API错误:', chrome.runtime.lastError);
+                    console.error('存储API错误:', chrome.runtime.lastError);
                     reject(chrome.runtime.lastError);
                 } else {
-                    console.log('✅ 存储API成功，设置:', result);
                     resolve(result);
                 }
             });
@@ -860,41 +810,19 @@ async function handleAIRecommendationRequest(query, sendResponse) {
         // 默认AI超时时间30000ms（如果用户未设置过）
         const aiTimeout = settings.aiTimeout || 30000;
 
-        console.log('AI推荐设置检查:', {
-            aiRecommendation: settings.aiRecommendation,
-            aiRecommendationEnabled: aiRecommendationEnabled,
-            aiTimeout: aiTimeout
-        });
-
         if (!aiRecommendationEnabled) {
-            console.log('AI推荐被禁用，设置值:', settings.aiRecommendation);
-            // 这里应该是配置文件的开关控制
             sendResponse({ success: false, error: 'AI推荐未启用' });
             return;
         }
 
-        // 检查AI权限 (使用官方文档的方式)
+        // 检查AI权限
         try {
-            console.log('开始检查AI权限...');
-
-            // 检查模型可用性
             const availability = await LanguageModel.availability();
-            console.log('模型可用性:', availability);
-
-            if (availability === 'available') {
-                console.log('AI权限检查通过');
-            } else if (availability === 'downloadable' || availability === 'downloading') {
-                console.log('模型需要下载，但API可用');
-            } else {
+            if (availability !== 'available' && availability !== 'downloadable' && availability !== 'downloading') {
                 throw new Error(`模型不可用，状态: ${availability}`);
             }
         } catch (error) {
             console.error('AI权限检查失败:', error);
-            console.error('错误详情:', {
-                message: error.message,
-                name: error.name,
-                stack: error.stack
-            });
             sendResponse({
                 success: false,
                 error: 'AI权限未授权，请在扩展设置中授权AI权限'
@@ -931,12 +859,7 @@ async function handleAIRecommendationRequest(query, sendResponse) {
             type: item.url ? 'history' : 'bookmark'
         }));
 
-        // 按照官方文档构建会话和提示
-        console.log('🤖 使用LanguageModel API调用AI...');
-        console.log('📊 历史数据:', contextData.length, '条记录');
-        console.log('🔍 搜索查询:', query);
-
-        // 创建会话，使用initialPrompts设置上下文
+        // 创建AI会话
         const initialPrompts = [
             {
                 role: 'system',
@@ -948,28 +871,7 @@ async function handleAIRecommendationRequest(query, sendResponse) {
             }
         ];
 
-        console.log('📝 Initial Prompts (传递给 LanguageModel.create()):');
-        console.log('const session = await LanguageModel.create({');
-        console.log('  initialPrompts: [');
-        initialPrompts.forEach((prompt, index) => {
-            console.log(`    {`);
-            console.log(`      role: '${prompt.role}',`);
-            console.log(`      content: '${prompt.content}'`);
-            console.log(`    }${index < initialPrompts.length - 1 ? ',' : ''}`);
-        });
-        console.log('  ]');
-        console.log('});');
-
-        // 步骤0: 跳过权限检查（Chrome暂不支持ai权限）
-        console.log('🔧 步骤0: 跳过权限检查，直接使用LanguageModel API...');
-
-        // 步骤1: 检查LanguageModel是否可用
-        console.log('🔧 步骤1: 检查LanguageModel API...');
-        console.log('🔧 检查LanguageModel是否可用:', typeof LanguageModel);
-        console.log('🔧 检查LanguageModel.create是否可用:', typeof LanguageModel.create);
-
         if (typeof LanguageModel === 'undefined') {
-            console.log('⚠️ LanguageModel API不可用，使用模拟数据');
             sendResponse({
                 success: true,
                 recommendations: [
@@ -988,26 +890,13 @@ async function handleAIRecommendationRequest(query, sendResponse) {
             return;
         }
 
-        // 跳过模型可用性检查，直接尝试创建AI会话
-        console.log('🔧 步骤1.5: 跳过模型可用性检查，直接尝试创建AI会话...');
-
         let session;
         try {
-            console.log('🔧 调用LanguageModel.create()...');
             session = await LanguageModel.create({
                 initialPrompts: initialPrompts
             });
-            console.log('✅ LanguageModel.create() 成功！');
-            console.log('✅ 会话对象:', typeof session);
-            console.log('✅ 会话方法:', Object.getOwnPropertyNames(session));
         } catch (createError) {
-            console.error('❌ LanguageModel.create() 失败！');
-            console.error('❌ 错误详情:', createError);
-            console.error('❌ 错误类型:', createError.name);
-            console.error('❌ 错误消息:', createError.message);
-            console.error('❌ 错误堆栈:', createError.stack);
-
-            // 发送错误响应
+            console.error('AI会话创建失败:', createError);
             sendResponse({
                 success: false,
                 error: `AI会话创建失败: ${createError.message}`
@@ -1016,24 +905,14 @@ async function handleAIRecommendationRequest(query, sendResponse) {
         }
 
         // 构建用户查询，包含历史数据
-        console.log('🔍 构建用户查询...');
-        console.log('🔍 搜索查询:', query);
-        console.log('🔍 历史数据条数:', contextData.length);
-
-        // 限制历史数据数量，避免prompt过长
         const limitedContextData = contextData.slice(0, 10); // 只取前10条
-        console.log('🔍 限制后历史数据条数:', limitedContextData.length);
-
         const userQuery = `基于搜索查询"${query}"，从以下数据中推荐3个最相关的链接：
 
 ${JSON.stringify(limitedContextData, null, 2)}
 
 请返回JSON格式的推荐结果：`;
 
-        console.log('📤 用户查询长度:', userQuery.length, '字符');
-        console.log('📤 查询预览:', userQuery.substring(0, 200) + '...');
-
-        // 步骤2: 验证 session.prompt() 是否成功
+        // 调用AI
         const promptArray = [
             {
                 role: 'user',
@@ -1041,7 +920,6 @@ ${JSON.stringify(limitedContextData, null, 2)}
             }
         ];
 
-        // 使用 JSON Schema 约束大模型输出，确保返回期望的结构化结果
         const recommendationSchema = {
             type: 'array',
             items: {
@@ -1058,27 +936,8 @@ ${JSON.stringify(limitedContextData, null, 2)}
             maxItems: 3
         };
 
-        console.log('🔧 步骤2: 开始调用AI...');
-        console.log('🔧 检查session.prompt是否可用:', typeof session.prompt);
-        console.log('📋 传递给 session.prompt() 的参数:');
-        console.log('const aiResponse = await session.prompt(');
-        console.log(JSON.stringify(promptArray, null, 2));
-        console.log(');');
-
-        // 简化prompt内容输出
-        console.log('🔍 发送给AI的prompt分析:');
-        console.log('🔍 prompt条数:', promptArray.length);
-        console.log('🔍 总字符数:', promptArray.reduce((total, item) => total + item.content.length, 0));
-        console.log('🔍 用户查询长度:', promptArray[0]?.content.length || 0, '字符');
-        console.log('🔍 用户查询预览:', promptArray[0]?.content.substring(0, 100) + '...');
-
         let aiResponse;
         try {
-            console.log('🔧 调用session.prompt()...');
-            console.log('⏰ 开始计时AI调用...');
-            const startTime = Date.now();
-
-            // 添加超时机制，避免AI调用卡住太久
             const timeoutPromise = new Promise((_, reject) => {
                 setTimeout(() => reject(new Error(`AI timeout after ${aiTimeout} ms`)), aiTimeout);
             });
@@ -1087,20 +946,8 @@ ${JSON.stringify(limitedContextData, null, 2)}
                 session.prompt(promptArray, { responseConstraint: recommendationSchema }),
                 timeoutPromise
             ]);
-
-            const endTime = Date.now();
-            const duration = endTime - startTime;
-            console.log(`✅ session.prompt() 成功！耗时: ${duration}ms`);
-            console.log('✅ AI响应类型:', typeof aiResponse);
-            console.log('✅ AI响应内容:', aiResponse);
         } catch (promptError) {
-            console.error('❌ session.prompt() 失败！');
-            console.error('❌ 错误详情:', promptError);
-            console.error('❌ 错误类型:', promptError.name);
-            console.error('❌ 错误消息:', promptError.message);
-            console.error('❌ 错误堆栈:', promptError.stack);
-
-            // 发送错误响应
+            console.error('AI调用失败:', promptError);
             sendResponse({
                 success: false,
                 error: `${promptError.message}`
@@ -1108,24 +955,13 @@ ${JSON.stringify(limitedContextData, null, 2)}
             return;
         }
 
-        console.log('LanguageModel API响应:', aiResponse);
-
-        // 解析AI响应 (LanguageModel API返回格式)
-        console.log('AI响应:', aiResponse);
-
-        // 尝试解析JSON响应
+        // 解析AI响应
         let recommendations = [];
         try {
-            // LanguageModel API返回的文本内容
             const responseText = aiResponse || '';
-            console.log('AI响应文本:', responseText);
-
-            // 尝试直接解析
             recommendations = JSON.parse(responseText);
         } catch (parseError) {
             console.error('JSON解析失败:', parseError);
-            console.log('原始响应:', aiResponse);
-
             // 如果解析失败，尝试从文本中提取JSON
             try {
                 const jsonMatch = responseText.match(/\[[\s\S]*\]/);
@@ -1134,68 +970,41 @@ ${JSON.stringify(limitedContextData, null, 2)}
                 } else {
                     // 如果无法解析，创建默认推荐
                     recommendations = [{
-                        title: "AI推荐功能测试 (LanguageModel API)",
+                        title: "AI推荐功能测试",
                         url: "https://www.google.com",
-                        reason: "这是使用LanguageModel API的测试推荐"
+                        reason: "这是AI推荐功能的测试推荐"
                     }];
                 }
             } catch (extractError) {
                 console.error('JSON提取失败:', extractError);
                 recommendations = [{
-                    title: "AI推荐功能测试 (LanguageModel API)",
+                    title: "AI推荐功能测试",
                     url: "https://www.google.com",
-                    reason: "这是使用LanguageModel API的测试推荐"
+                    reason: "这是AI推荐功能的测试推荐"
                 }];
             }
         }
 
-        // 步骤4: 验证 sendResponse 调用
-        console.log('🔧 步骤4: 准备发送成功响应...');
-        console.log('🔧 检查sendResponse是否可用:', typeof sendResponse);
-        console.log('📤 推荐结果:', recommendations.slice(0, 3));
-
-        try {
-            sendResponse({
-                success: true,
-                recommendations: recommendations.slice(0, 3) // 限制为3个推荐
-            });
-            console.log('✅ 成功响应已发送！');
-        } catch (responseError) {
-            console.error('❌ 发送成功响应失败:', responseError);
-            console.error('❌ 响应错误详情:', responseError);
-        }
+        sendResponse({
+            success: true,
+            recommendations: recommendations.slice(0, 3)
+        });
 
     } catch (error) {
-        console.error('❌ 步骤3: AI推荐失败 - 异步操作错误处理验证');
-        console.error('❌ 错误详情:', error);
-        console.error('❌ 错误类型:', error.name);
-        console.error('❌ 错误消息:', error.message);
-        console.error('❌ 错误堆栈:', error.stack);
-        console.log('📤 准备发送错误响应...');
-
-        try {
-            sendResponse({
-                success: false,
-                error: error.message
-            });
-            console.log('✅ 错误响应已发送！');
-        } catch (responseError) {
-            console.error('❌ 发送错误响应失败:', responseError);
-        }
+        console.error('AI推荐失败:', error);
+        sendResponse({
+            success: false,
+            error: error.message
+        });
     }
 }
 
 // 处理AI模型下载请求
 async function handleDownloadAIModelRequest(sendResponse) {
-    console.log('🚀 开始处理AI模型下载请求...');
-
     try {
-        // 检查当前模型状态
         const availability = await LanguageModel.availability();
-        console.log('🔍 当前模型状态:', availability);
 
         if (availability === 'available') {
-            console.log('✅ 模型已可用，无需下载');
             sendResponse({
                 success: true,
                 message: '模型已可用',
@@ -1205,42 +1014,27 @@ async function handleDownloadAIModelRequest(sendResponse) {
         }
 
         if (availability === 'downloading') {
-            console.log('⏳ 模型正在下载中，开始监听下载进度');
-
             // 创建会话以监听正在进行的下载
             try {
                 const session = await LanguageModel.create({
                     monitor(m) {
-                        console.log('📊 设置下载进度监听器（正在进行的下载）');
                         m.addEventListener('downloadprogress', (e) => {
-                            // e.loaded 是 0-1 之间的进度值，需要转换为百分比
                             const progress = Math.round(e.loaded * 100);
-                            console.log(`📥 下载进度: ${progress}% (原始值: ${e.loaded})`);
-
-                            // 发送进度更新到前端
                             chrome.runtime.sendMessage({
                                 action: 'downloadProgress',
                                 progress: progress,
                                 loaded: e.loaded
-                            }).catch(() => {
-                                // 忽略发送失败，可能前端已关闭它
-                            });
+                            }).catch(() => { });
                         });
 
                         m.addEventListener('downloadcomplete', () => {
-                            console.log('✅ 模型下载完成');
-
-                            // 发送下载完成通知
                             chrome.runtime.sendMessage({
                                 action: 'downloadComplete'
-                            }).catch(() => {
-                                // 忽略发送失败
-                            });
+                            }).catch(() => { });
                         });
                     }
                 });
 
-                console.log('✅ 下载进度监听器设置成功');
                 sendResponse({
                     success: true,
                     message: '正在监听下载进度',
@@ -1249,7 +1043,7 @@ async function handleDownloadAIModelRequest(sendResponse) {
                 });
                 return;
             } catch (error) {
-                console.error('❌ 设置下载进度监听器失败:', error);
+                console.error('设置下载进度监听器失败:', error);
                 sendResponse({
                     success: false,
                     error: `监听下载进度失败: ${error.message}`,
@@ -1260,7 +1054,6 @@ async function handleDownloadAIModelRequest(sendResponse) {
         }
 
         if (availability !== 'downloadable') {
-            console.log('❌ 模型状态不支持下载:', availability);
             sendResponse({
                 success: false,
                 error: `模型状态不支持下载: ${availability}`,
@@ -1269,45 +1062,28 @@ async function handleDownloadAIModelRequest(sendResponse) {
             return;
         }
 
-        console.log('📥 开始下载AI模型...');
-
         // 创建会话并开始下载
         const session = await LanguageModel.create({
             monitor(m) {
-                console.log('📊 设置下载进度监听器');
                 m.addEventListener('downloadprogress', (e) => {
-                    // e.loaded 是 0-1 之间的进度值，需要转换为百分比
                     const progress = Math.round(e.loaded * 100);
-                    console.log(`📥 下载进度: ${progress}% (原始值: ${e.loaded})`);
-
-                    // 发送进度更新到前端
                     chrome.runtime.sendMessage({
                         action: 'downloadProgress',
                         progress: progress,
                         loaded: e.loaded
-                    }).catch(() => {
-                        // 忽略发送失败，可能前端已关闭
-                    });
+                    }).catch(() => { });
                 });
 
                 m.addEventListener('downloadcomplete', () => {
-                    console.log('✅ 模型下载完成');
-
-                    // 发送下载完成通知
                     chrome.runtime.sendMessage({
                         action: 'downloadComplete'
-                    }).catch(() => {
-                        // 忽略发送失败
-                    });
+                    }).catch(() => { });
                 });
             }
         });
 
-        console.log('✅ 模型下载会话创建成功');
-
         // 重新检查模型状态
         const newAvailability = await LanguageModel.availability();
-        console.log('🔍 下载后模型状态:', newAvailability);
 
         sendResponse({
             success: true,
@@ -1317,22 +1093,18 @@ async function handleDownloadAIModelRequest(sendResponse) {
         });
 
     } catch (error) {
-        console.error('❌ AI模型下载失败:', error);
+        console.error('AI模型下载失败:', error);
         sendResponse({
             success: false,
             error: `模型下载失败: ${error.message}`,
             errorDetails: error
         });
-    } finally {
-        // 确保sendResponse被调用
-        console.log('🔧 handleDownloadAIModelRequest 函数执行完成');
     }
 }
 
 // 处理获取所有书签请求
 async function handleGetAllBookmarksRequest(sendResponse) {
     try {
-        console.log('📚 开始获取所有书签');
 
         const bookmarks = await chrome.bookmarks.getTree();
         const flatBookmarks = [];
@@ -1369,14 +1141,12 @@ async function handleGetAllBookmarksRequest(sendResponse) {
 
         flattenBookmarks(bookmarks);
 
-        console.log(`📚 获取到 ${flatBookmarks.length} 个书签`);
-
         sendResponse({
             success: true,
             results: flatBookmarks
         });
     } catch (error) {
-        console.error('❌ 获取书签失败:', error);
+        console.error('获取书签失败:', error);
         sendResponse({
             success: false,
             error: error.message
@@ -1387,17 +1157,14 @@ async function handleGetAllBookmarksRequest(sendResponse) {
 // 处理删除书签请求
 async function handleDeleteBookmarkRequest(bookmarkId, sendResponse) {
     try {
-        console.log('🗑️ 开始删除书签:', bookmarkId);
-
         await chrome.bookmarks.remove(bookmarkId);
 
-        console.log('✅ 书签删除成功');
         sendResponse({
             success: true,
             message: '书签删除成功'
         });
     } catch (error) {
-        console.error('❌ 删除书签失败:', error);
+        console.error('删除书签失败:', error);
         sendResponse({
             success: false,
             error: error.message
@@ -1408,11 +1175,7 @@ async function handleDeleteBookmarkRequest(bookmarkId, sendResponse) {
 // 处理窗口合并请求
 async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendResponse) {
     try {
-        console.log('🔄 开始处理窗口合并请求');
-        console.log('📊 源窗口ID:', sourceWindowId);
-        console.log('📊 目标窗口ID:', targetWindowId);
-
-        // 1. 参数验证
+        // 参数验证
         if (!sourceWindowId || !targetWindowId) {
             throw new Error('源窗口ID和目标窗口ID不能为空');
         }
@@ -1421,8 +1184,7 @@ async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendRes
             throw new Error('源窗口和目标窗口不能相同');
         }
 
-        // 2. 检查窗口是否存在
-        console.log('🔍 检查窗口是否存在...');
+        // 检查窗口是否存在
         const windows = await chrome.windows.getAll();
         const sourceWindow = windows.find(w => w.id === sourceWindowId);
         const targetWindow = windows.find(w => w.id === targetWindowId);
@@ -1435,33 +1197,23 @@ async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendRes
             throw new Error(`目标窗口 ${targetWindowId} 不存在`);
         }
 
-        console.log('✅ 窗口存在性检查通过');
-        console.log('📊 源窗口状态:', sourceWindow.state);
-        console.log('📊 目标窗口状态:', targetWindow.state);
-
-        // 3. 获取源窗口的所有标签页
-        console.log('🔍 获取源窗口标签页...');
+        // 获取源窗口的所有标签页
         const sourceTabs = await chrome.tabs.query({ windowId: sourceWindowId });
 
         if (!sourceTabs || sourceTabs.length === 0) {
             throw new Error('源窗口没有标签页');
         }
 
-        console.log(`📊 源窗口有 ${sourceTabs.length} 个标签页`);
-
-        // 4. 检查目标窗口是否已关闭
+        // 检查目标窗口是否已关闭
         if (targetWindow.state === 'minimized') {
-            console.log('⚠️ 目标窗口已最小化，尝试恢复');
             try {
                 await chrome.windows.update(targetWindowId, { state: 'normal' });
-                console.log('✅ 目标窗口已恢复');
             } catch (error) {
-                console.warn('⚠️ 恢复目标窗口失败:', error.message);
+                console.warn('恢复目标窗口失败:', error.message);
             }
         }
 
-        // 5. 执行标签页移动
-        console.log('🔄 开始移动标签页...');
+        // 执行标签页移动
         const tabIds = sourceTabs.map(tab => tab.id);
 
         try {
@@ -1469,32 +1221,21 @@ async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendRes
                 windowId: targetWindowId,
                 index: -1 // 移动到目标窗口末尾
             });
-            console.log('✅ 标签页移动成功');
         } catch (error) {
-            console.error('❌ 标签页移动失败:', error);
             throw new Error(`标签页移动失败: ${error.message}`);
         }
 
-        // 6. 关闭源窗口
-        console.log('🔄 关闭源窗口...');
+        // 关闭源窗口
         try {
             await chrome.windows.remove(sourceWindowId);
-            console.log('✅ 源窗口关闭成功');
         } catch (error) {
-            console.error('❌ 关闭源窗口失败:', error);
-            // 即使关闭失败，标签页已经移动成功，所以不抛出错误
-            console.warn('⚠️ 标签页已移动，但源窗口关闭失败');
+            console.warn('标签页已移动，但源窗口关闭失败');
         }
 
-        // 7. 验证合并结果
-        console.log('🔍 验证合并结果...');
+        // 验证合并结果
         const remainingTabs = await chrome.tabs.query({ windowId: sourceWindowId });
         const targetTabs = await chrome.tabs.query({ windowId: targetWindowId });
 
-        console.log(`📊 源窗口剩余标签页: ${remainingTabs.length}`);
-        console.log(`📊 目标窗口标签页数量: ${targetTabs.length}`);
-
-        // 8. 返回成功响应
         sendResponse({
             success: true,
             message: `成功将 ${sourceTabs.length} 个标签页合并到目标窗口`,
@@ -1502,10 +1243,8 @@ async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendRes
             targetWindowTabsCount: targetTabs.length
         });
 
-        console.log('✅ 窗口合并操作完成');
-
     } catch (error) {
-        console.error('❌ 窗口合并失败:', error);
+        console.error('窗口合并失败:', error);
 
         // 根据错误类型提供更详细的错误信息
         let errorMessage = error.message;
@@ -1525,22 +1264,16 @@ async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendRes
             error: errorMessage,
             errorDetails: error.message
         });
-    } finally {
-        console.log('🔧 handleMergeWindowsRequest 函数执行完成');
     }
 }
 
 // 处理创建标签页请求
 async function handleCreateTabRequest(url, sendResponse) {
     try {
-        console.log('🔗 创建标签页:', url);
-
         const tab = await chrome.tabs.create({ url: url });
-        console.log('✅ 标签页创建成功:', tab.id);
-
         sendResponse({ success: true, tabId: tab.id });
     } catch (error) {
-        console.error('❌ 创建标签页失败:', error);
+        console.error('创建标签页失败:', error);
         sendResponse({ success: false, error: error.message });
     }
 }
@@ -1548,7 +1281,6 @@ async function handleCreateTabRequest(url, sendResponse) {
 // 处理获取最近历史记录请求
 async function handleGetRecentHistoryRequest(limit, sendResponse) {
     try {
-        console.log('📚 开始获取最近历史记录，限制:', limit);
 
         const endTime = Date.now();
         const startTime = endTime - (7 * 24 * 60 * 60 * 1000); // 最近7天
@@ -1564,8 +1296,6 @@ async function handleGetRecentHistoryRequest(limit, sendResponse) {
                 sendResponse({ success: false, error: chrome.runtime.lastError.message });
                 return;
             }
-
-            console.log(`📚 获取到 ${historyItems.length} 条历史记录`);
 
             // 按访问时间排序（从新到旧）
             historyItems.sort((a, b) => b.lastVisitTime - a.lastVisitTime);
@@ -1597,15 +1327,13 @@ async function handleGetRecentHistoryRequest(limit, sendResponse) {
                 }
             }
 
-            console.log(`📚 去重后得到 ${uniqueHistoryItems.length} 条历史记录`);
-
             sendResponse({
                 success: true,
                 results: uniqueHistoryItems
             });
         });
     } catch (error) {
-        console.error('❌ 获取最近历史记录失败:', error);
+        console.error('获取最近历史记录失败:', error);
         sendResponse({ success: false, error: error.message });
     }
 }
