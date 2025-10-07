@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "list view",
+  "name": "List View",
   "version": "1.1.0",
   "description": "Search through your bookmarks and browsing history",
   "icons": {
@@ -10,7 +10,7 @@
     "128": "images/icon-128.png"
   },
   "action": {
-    "default_title": "list view"
+    "default_title": "List View"
   },
   "options_page": "options.html",
   "permissions": [

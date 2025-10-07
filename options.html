@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>soso search - 设置</title>
+    <title>List View - Settings</title>
     <style>
         * {
             margin: 0;
@@ -14,7 +14,8 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #ffffff;
+            /* simplified white background */
             min-height: 100vh;
             color: #333;
         }
@@ -29,13 +30,23 @@
         .header {
             text-align: center;
             margin-bottom: 30px;
-            color: white;
+            color: #2c3e50;
+            /* dark text for white bg */
         }
 
         .header h1 {
             font-size: 2.5rem;
             margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            text-shadow: none;
+            /* remove heavy shadow for simplicity */
+        }
+
+        .app-logo {
+            width: 32px;
+            height: 32px;
+            vertical-align: middle;
+            margin-right: 8px;
+            border-radius: 6px;
         }
 
         .header p {
@@ -47,7 +58,8 @@
             display: flex;
             background: white;
             border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            /* softer shadow */
             overflow: hidden;
             min-height: 600px;
         }
@@ -70,13 +82,14 @@
         }
 
         .nav-item:hover {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+            /* light blue */
             color: white;
             transform: translateX(5px);
         }
 
         .nav-item.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
             color: white;
             box-shadow: inset 4px 0 0 #fff;
         }
@@ -98,7 +111,8 @@
             font-size: 1.8rem;
             margin-bottom: 30px;
             color: #2c3e50;
-            border-bottom: 3px solid #667eea;
+            border-bottom: 3px solid #93c5fd;
+            /* light blue */
             padding-bottom: 10px;
         }
 
@@ -107,7 +121,8 @@
             border-radius: 12px;
             padding: 25px;
             margin-bottom: 25px;
-            border-left: 4px solid #667eea;
+            border-left: none;
+            /* remove blue left border */
         }
 
         .setting-group h3 {
@@ -159,7 +174,8 @@
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background: #667eea;
+            background: #93c5fd;
+            /* light blue */
             cursor: pointer;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
         }
@@ -168,7 +184,8 @@
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background: #667eea;
+            background: #93c5fd;
+            /* light blue */
             cursor: pointer;
             border: none;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
@@ -198,8 +215,9 @@
         }
 
         .input-number:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            border-color: #93c5fd;
+            /* light blue */
+            box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.25);
         }
 
         /* Show native steppers for number input */
@@ -251,7 +269,8 @@
         }
 
         .toggle-switch input:checked+.toggle-slider {
-            background-color: #667eea;
+            background-color: #93c5fd;
+            /* light blue */
         }
 
         .toggle-switch input:checked+.toggle-slider:before {
@@ -259,7 +278,7 @@
         }
 
         .save-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
             color: white;
             border: none;
             padding: 12px 30px;
@@ -268,12 +287,12 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 4px 15px rgba(147, 197, 253, 0.35);
         }
 
         .save-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 20px rgba(147, 197, 253, 0.45);
         }
 
         .save-btn:active {
@@ -281,11 +300,12 @@
         }
 
         .info-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 20px;
-            border-left: 4px solid #28a745;
+            background: #ffffff;
+            border-radius: 0;
+            /* straight edges so divider looks perfectly straight */
+            padding: 20px 0;
+            margin-bottom: 0;
+            border-left: none;
         }
 
         .info-card h4 {
@@ -297,13 +317,20 @@
         .info-item {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 10px;
-            padding: 8px 0;
-            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 8px;
+            padding: 6px 0;
+            border-bottom: none;
+            /* remove table-like borders */
         }
 
         .info-item:last-child {
             border-bottom: none;
+        }
+
+        /* Divider between info blocks */
+        #info .info-card+.info-card {
+            border-top: 1px solid #e5e7eb;
+            margin-top: 8px;
         }
 
         .info-label {
@@ -355,8 +382,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 soso search</h1>
-            <p>Quick search settings</p>
+            <h1><img src="images/icon-32.png" alt="List View" class="app-logo">List View</h1>
         </div>
 
         <div class="main-content">
@@ -387,6 +413,10 @@
                                     class="input-number">
                             </div>
                         </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>AI</h3>
 
                         <div class="setting-item">
                             <div>
@@ -423,52 +453,40 @@
                     <h2 class="section-title">About</h2>
 
                     <div class="info-card">
-                        <h4>Basics</h4>
-                        <div class="info-item">
-                            <span class="info-label">Name</span>
-                            <span class="info-value">soso search</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Version</span>
-                            <span class="info-value" id="extensionVersion">1.0.0</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Author</span>
-                            <span class="info-value">soso search Team</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Updated</span>
-                            <span class="info-value" id="lastUpdate">2024-01-01</span>
+                        <div class="info-item" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                            <span class="info-app-name" style="font-weight: 600; color: #111827; font-size: 16px;">List
+                                View</span>
+                            <a href="https://github.com/think-next/quick_browser" target="_blank" rel="noopener"
+                                id="extensionVersion" style="color: #6b7280; font-size: 14px;">1.1.0</a>
                         </div>
                     </div>
 
                     <div class="info-card">
-                        <h4>Features</h4>
-                        <div class="info-item">
-                            <span class="info-label">Shortcut</span>
-                            <span class="info-value">Ctrl+K (Mac: Cmd+K)</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Search supports</span>
-                            <span class="info-value">History, Bookmarks, Tabs</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Smart filter</span>
-                            <span class="info-value">Type filters and keywords</span>
+                        <div class="info-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                            <span style="font-weight: 600; color: #111827; font-size: 16px;">Donation</span>
+                            <div style="color: #6b7280; font-size: 14px; line-height: 1.5;">
+                                <p style="margin: 0 0 8px 0;">Thank you for using List View.</p>
+                                <p style="margin: 0 0 8px 0;">Your support will be a great encouragement for me to
+                                    continue developing this extension.</p>
+                                <p style="margin: 0 0 16px 0;">If you like List View, please consider donating. I would
+                                    be
+                                    grateful for your support.</p>
+                                <div style="display: flex; gap: 48px; margin-top: 12px;">
+                                    <div style="text-align: center;">
+                                        <img src="images/wechat-qr.png" alt="WeChat Payment QR Code"
+                                            style="width: 120px; height: 120px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                                        <p style="margin: 8px 0 0 0; font-size: 12px; color: #6b7280;">WeChat</p>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <img src="images/alipay-qr.png" alt="Alipay Payment QR Code"
+                                            style="width: 120px; height: 120px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                                        <p style="margin: 8px 0 0 0; font-size: 12px; color: #6b7280;">Alipay</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="info-card">
-                        <h4>Usage</h4>
-                        <div class="info-item">
-                            <span class="info-label">Total searches</span>
-                            <span class="info-value" id="totalSearches">0</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Most used</span>
-                            <span class="info-value" id="mostUsedFeature">History search</span>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
