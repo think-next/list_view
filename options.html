@@ -166,6 +166,7 @@
             background: #e9ecef;
             outline: none;
             -webkit-appearance: none;
+            appearance: none;
         }
 
         .slider::-webkit-slider-thumb {
@@ -223,6 +224,7 @@
         /* Show native steppers for number input */
         input[type=number] {
             -moz-appearance: auto;
+            -webkit-appearance: auto;
             appearance: auto;
         }
 
@@ -277,26 +279,95 @@
             transform: translateX(26px);
         }
 
+        .save-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-top: 20px;
+            gap: 15px;
+        }
+
         .save-btn {
-            background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
             color: white;
             border: none;
-            padding: 12px 30px;
-            border-radius: 25px;
-            font-size: 1rem;
-            font-weight: 600;
+            padding: 9.6px 24px;
+            border-radius: 7.2px;
+            font-size: 0.66rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(147, 197, 253, 0.35);
+            transition: all 0.2s ease;
+            box-shadow: 0 2.4px 12px rgba(59, 130, 246, 0.4);
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            min-width: 84px;
         }
 
         .save-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(147, 197, 253, 0.45);
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            transform: translateY(-1.8px);
+            box-shadow: 0 4.8px 15px rgba(59, 130, 246, 0.5);
         }
 
         .save-btn:active {
-            transform: translateY(0);
+            transform: translateY(-0.6px);
+            box-shadow: 0 2.4px 9px rgba(59, 130, 246, 0.6);
+        }
+
+        .save-btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+        }
+
+        .save-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .save-btn:hover::before {
+            left: 100%;
+        }
+
+        .save-btn.saving {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            cursor: not-allowed;
+        }
+
+        .save-btn.error {
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            cursor: not-allowed;
+        }
+
+        .save-btn.saving::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 12px;
+            height: 12px;
+            margin: -6px 0 0 -6px;
+            border: 1.2px solid transparent;
+            border-top: 1.2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .info-card {
@@ -343,10 +414,13 @@
         }
 
         .status-message {
-            padding: 15px;
+            padding: 12px 16px;
             border-radius: 8px;
-            margin-top: 20px;
             display: none;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 500;
+            max-width: 300px;
         }
 
         .status-message.success {
@@ -443,9 +517,10 @@
                         </div>
                     </div>
 
-                    <button class="save-btn" id="saveSettings">Save</button>
-
-                    <div class="status-message" id="statusMessage"></div>
+                    <div class="save-section">
+                        <button class="save-btn" id="saveSettings">Save</button>
+                        <div class="status-message" id="statusMessage"></div>
+                    </div>
                 </div>
 
                 <!-- 信息页面 -->

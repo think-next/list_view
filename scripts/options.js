@@ -37,6 +37,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 保存设置
     saveBtn.addEventListener('click', function () {
+        // 添加点击反馈效果
+        saveBtn.classList.add('saving');
+        saveBtn.textContent = 'SAVING...';
+
         let maxResults = parseInt(maxResultsInput.value);
         const aiRecommendation = aiRecommendationToggle.checked;
         let aiTimeout = parseInt(aiTimeoutInput.value);
@@ -63,9 +67,31 @@ document.addEventListener('DOMContentLoaded', function () {
             aiTimeout: aiTimeout
         }, function () {
             if (chrome.runtime.lastError) {
-                showStatus('保存失败: ' + chrome.runtime.lastError.message, 'error');
+                // 保存失败，显示错误状态
+                setTimeout(() => {
+                    saveBtn.classList.remove('saving');
+                    saveBtn.textContent = 'ERROR';
+                    saveBtn.style.background = 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)';
+
+                    // 2秒后恢复
+                    setTimeout(() => {
+                        saveBtn.textContent = 'SAVE';
+                        saveBtn.style.background = 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)';
+                    }, 2000);
+                }, 800);
             } else {
-                showStatus('设置已保存！', 'success');
+                // 保存成功，显示成功状态
+                setTimeout(() => {
+                    saveBtn.classList.remove('saving');
+                    saveBtn.textContent = 'SUCCESS';
+                    saveBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+
+                    // 1.5秒后恢复
+                    setTimeout(() => {
+                        saveBtn.textContent = 'SAVE';
+                        saveBtn.style.background = 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)';
+                    }, 1500);
+                }, 800);
             }
         });
     });
