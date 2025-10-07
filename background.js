@@ -67,7 +67,7 @@ async function injectContentScript(tabId) {
 // 监听键盘快捷键命令
 chrome.commands.onCommand.addListener((command) => {
     if (command === '_execute_action') {
-        console.log('快捷键 Ctrl+Shift+K (Windows/Linux) 或 Command+Shift+K (Mac) 被触发');
+        console.log('快捷键 Ctrl+Shift+L (Windows/Linux) 或 Command+Shift+L (Mac) 被触发');
         handleShortcutTrigger();
     }
 });
