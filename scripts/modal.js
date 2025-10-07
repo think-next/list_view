@@ -2997,8 +2997,8 @@ class SearchModal {
                         resolve(false);
                         return;
                     }
-                    // 默认启用：aiRecommendation !== false
-                    const enabled = result && result.aiRecommendation !== false;
+                    // 默认关闭：aiRecommendation === true
+                    const enabled = result && result.aiRecommendation === true;
                     this.aiEnabled = enabled;
                     resolve(enabled);
                 });

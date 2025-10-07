@@ -749,7 +749,7 @@ async function handleCheckAISettingsRequest(sendResponse) {
             });
         });
 
-        const aiRecommendationEnabled = settings.aiRecommendation !== false;
+        const aiRecommendationEnabled = settings.aiRecommendation === true;
 
         // 检查AI权限 (使用官方文档的方式)
         let permissionGranted = false;
@@ -805,8 +805,8 @@ async function handleAIRecommendationRequest(query, sendResponse) {
             });
         });
 
-        // 默认启用AI推荐（如果用户未设置过）
-        const aiRecommendationEnabled = settings.aiRecommendation !== false;
+        // 默认关闭AI推荐（需要用户手动开启）
+        const aiRecommendationEnabled = settings.aiRecommendation === true;
         // 默认AI超时时间30000ms（如果用户未设置过）
         const aiTimeout = settings.aiTimeout || 30000;
 

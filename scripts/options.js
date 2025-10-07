@@ -76,8 +76,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (result.maxResults) {
                 maxResultsInput.value = result.maxResults;
             }
-            // 默认启用AI推荐（如果用户未设置过）
-            aiRecommendationToggle.checked = result.aiRecommendation !== false;
+            // 默认关闭AI推荐（需要用户手动开启）
+            aiRecommendationToggle.checked = result.aiRecommendation === true;
             // 默认AI超时时间30000ms（如果用户未设置过）
             aiTimeoutInput.value = result.aiTimeout || 30000;
         });
