@@ -369,6 +369,7 @@ class SearchModal {
                 display: flex;
                 flex-direction: column;
                 align-items: stretch;
+                z-index: 1000003; /* 确保过滤器容器在最上层 */
             }
 
             .input-row {
@@ -1607,6 +1608,8 @@ class SearchModal {
                 padding: 20px;
                 background: #f8fafc;
                 border-bottom: 1px solid #dee2e6;
+                position: relative;
+                z-index: 1; /* 确保历史统计区域在较低层级 */
             }
 
             .stats-header {
