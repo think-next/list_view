@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // AI超时时间边界检查
     aiTimeoutInput.addEventListener('input', function () {
-        const num = Math.max(100, Math.min(3000, parseInt(this.value || '30000', 10)));
+        const num = Math.max(100, Math.min(60000, parseInt(this.value || '30000', 10)));
         this.value = isNaN(num) ? 30000 : num;
     });
 
@@ -55,8 +55,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (isNaN(aiTimeout) || aiTimeout < 100) {
             aiTimeout = 100;
-        } else if (aiTimeout > 3000) {
-            aiTimeout = 3000;
+        } else if (aiTimeout > 60000) {
+            aiTimeout = 60000;
         }
         aiTimeoutInput.value = aiTimeout;
 
