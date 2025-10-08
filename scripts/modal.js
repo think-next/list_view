@@ -2903,8 +2903,8 @@ class SearchModal {
 
     // 处理输入变化
     handleInputChange(query) {
-        // 检查是否以 "list" 开头
-        if (query === 'list') {
+        // 检查是否以 "list" 开头（兼容大小写）
+        if (query.toLowerCase() === 'list') {
             this.showFilterDropdown();
             return;
         }
