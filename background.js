@@ -252,13 +252,44 @@ async function handleSearchRequest(query, filter, sendResponse) {
             });
             return;
         } else {
-            // 默认：并行搜索书签和历史记录
-            const [bookmarks, history] = await Promise.all([
+            // 默认：并行搜索 Tabs、书签 和 历史记录
+            const [tabsFlat, bookmarks, history] = await Promise.all([
+                searchTabsFlat(query),
                 searchBookmarks(query),
                 searchHistory(query)
             ]);
-            results = [...bookmarks, ...history];
+
+            // 各来源内部：先依据各自时间维度排序
+            const sortedTabs = sortTabsForDefault(tabsFlat);
+            const sortedBookmarks = sortBookmarksForDefault(bookmarks);
+            const sortedHistory = sortHistoryForDefault(history);
+
+            // 各来源内部去重（以基础URL为准，忽略查询参数）并各自限量12条
+            const tabsCapped = dedupeAndCapByBaseUrl(sortedTabs, 12);
+            const bookmarksCapped = dedupeAndCapByBaseUrl(sortedBookmarks, 12);
+            const historyCapped = dedupeAndCapByBaseUrl(sortedHistory, 12);
+
+            // 跨来源合并：按优先级 Tabs > 书签 > 历史，并按基础URL去重（优先级保留）
+            const merged = mergeSourcesByPriority({
+                tabs: tabsCapped,
+                bookmarks: bookmarksCapped,
+                history: historyCapped
+            });
+
+            // 最终结果：按 Tabs、书签、历史分段展示顺序
+            results = merged;
+
+            // 返回结果（按需求不使用全局上限，严格每来源上限12）
+            sendResponse({
+                success: true,
+                results: results,
+                perSourceLimit: 12,
+                order: ['tab', 'bookmark', 'history']
+            });
+            return;
         }
+
+        // 原有分支（非默认）走老逻辑
 
         // 按时间排序
         results.sort((a, b) => new Date(b.lastVisitTime || b.dateAdded) - new Date(a.lastVisitTime || a.dateAdded));
@@ -417,6 +448,110 @@ async function searchTabs(query) {
             resolve(windowGroups);
         });
     });
+}
+
+// 默认搜索用：扁平化标签页搜索（不分窗口分组）
+async function searchTabsFlat(query) {
+    return new Promise((resolve, reject) => {
+        chrome.tabs.query({}, (tabs) => {
+            if (chrome.runtime.lastError) {
+                reject(new Error(chrome.runtime.lastError.message));
+                return;
+            }
+
+            const q = (query || '').trim().toLowerCase();
+            const filtered = tabs.filter(tab => {
+                if (!q) return true;
+                const title = (tab.title || '').toLowerCase();
+                const url = (tab.url || '').toLowerCase();
+                return title.includes(q) || url.includes(q);
+            }).map(tab => ({
+                title: tab.title,
+                url: tab.url,
+                type: 'tab',
+                tabId: tab.id,
+                windowId: tab.windowId,
+                active: !!tab.active,
+                pinned: !!tab.pinned,
+                // 作为排序参考；有些环境提供 lastAccessed
+                lastAccessed: tab.lastAccessed || 0,
+                // 回退时间，用于与历史/书签对齐的排序字段名
+                lastVisitTime: tab.lastAccessed || Date.now()
+            }));
+
+            resolve(filtered);
+        });
+    });
+}
+
+// 工具：基础URL（去查询参数）
+function toBaseUrl(urlString) {
+    try {
+        const url = new URL(urlString);
+        return url.origin + url.pathname;
+    } catch (e) {
+        return urlString;
+    }
+}
+
+// 各来源内部：按各自逻辑排序
+function sortTabsForDefault(tabs) {
+    // 优先激活的tab，其次按 lastAccessed/lastVisitTime 降序
+    return [...tabs].sort((a, b) => {
+        if (a.active && !b.active) return -1;
+        if (!a.active && b.active) return 1;
+        return (b.lastAccessed || b.lastVisitTime || 0) - (a.lastAccessed || a.lastVisitTime || 0);
+    });
+}
+
+function sortBookmarksForDefault(bookmarks) {
+    // 书签按 dateAdded 降序
+    return [...bookmarks].sort((a, b) => new Date(b.dateAdded || 0) - new Date(a.dateAdded || 0));
+}
+
+function sortHistoryForDefault(history) {
+    // 历史按 lastVisitTime 降序
+    return [...history].sort((a, b) => new Date(b.lastVisitTime || 0) - new Date(a.lastVisitTime || 0));
+}
+
+// 在单一来源内部去重并限量
+function dedupeAndCapByBaseUrl(items, limit) {
+    const seen = new Set();
+    const output = [];
+    for (const item of items) {
+        if (!item || !item.url) continue;
+        const key = toBaseUrl(item.url);
+        if (seen.has(key)) {
+            continue;
+        }
+        seen.add(key);
+        output.push(item);
+        if (output.length >= limit) break;
+    }
+    return output;
+}
+
+// 跨来源合并（优先级：Tabs > Bookmarks > History），并按段落顺序输出
+function mergeSourcesByPriority({ tabs = [], bookmarks = [], history = [] }) {
+    const keep = new Set(); // 记录已保留的基础URL
+    const result = [];
+
+    const pushWithCheck = (item) => {
+        if (!item || !item.url) return;
+        const key = toBaseUrl(item.url);
+        if (keep.has(key)) return;
+        keep.add(key);
+        result.push(item);
+    };
+
+    // Tabs 段
+    tabs.forEach(pushWithCheck);
+    // Bookmarks 段
+    bookmarks.forEach(pushWithCheck);
+    // History 段
+    history.forEach(pushWithCheck);
+
+    return result;
 }
 
 // 按窗口分组标签页
