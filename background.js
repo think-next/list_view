@@ -223,6 +223,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({ success: false, error: error.message });
             });
         return true;
+    } else if (request.action === 'getWindowNames') {
+        // 处理获取窗口名称请求
+        handleGetWindowNamesRequest(sendResponse)
+            .catch(error => {
+                console.error('获取窗口名称失败:', error);
+                sendResponse({ success: false, error: error.message });
+            });
+        return true;
     }
 
     // 未知消息类型
@@ -265,7 +273,8 @@ async function handleSearchRequest(query, filter, sendResponse) {
             const sortedHistory = sortHistoryForDefault(history);
 
             // 各来源内部去重（以基础URL为准，忽略查询参数）并各自限量12条
-            const tabsCapped = dedupeAndCapByBaseUrl(sortedTabs, 12);
+            // tab记录在默认搜索中不需要去重处理，直接限量
+            const tabsCapped = sortedTabs.slice(0, 12);
             const bookmarksCapped = dedupeAndCapByBaseUrl(sortedBookmarks, 12);
             const historyCapped = dedupeAndCapByBaseUrl(sortedHistory, 12);
 
@@ -452,12 +461,35 @@ async function searchTabs(query) {
 
 // 默认搜索用：扁平化标签页搜索（不分窗口分组）
 async function searchTabsFlat(query) {
-    return new Promise((resolve, reject) => {
-        chrome.tabs.query({}, (tabs) => {
-            if (chrome.runtime.lastError) {
-                reject(new Error(chrome.runtime.lastError.message));
-                return;
-            }
+    return new Promise(async (resolve, reject) => {
+        try {
+            // 并行获取tabs和windows信息
+            const [tabs, windows] = await Promise.all([
+                new Promise((resolve, reject) => {
+                    chrome.tabs.query({}, (tabs) => {
+                        if (chrome.runtime.lastError) {
+                            reject(new Error(chrome.runtime.lastError.message));
+                            return;
+                        }
+                        resolve(tabs);
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    chrome.windows.getAll({}, (windows) => {
+                        if (chrome.runtime.lastError) {
+                            reject(new Error(chrome.runtime.lastError.message));
+                            return;
+                        }
+                        resolve(windows);
+                    });
+                })
+            ]);
+
+            // 创建窗口ID到窗口信息的映射
+            const windowMap = new Map();
+            windows.forEach(window => {
+                windowMap.set(window.id, window);
+            });
 
             const q = (query || '').trim().toLowerCase();
             const filtered = tabs.filter(tab => {
@@ -465,22 +497,32 @@ async function searchTabsFlat(query) {
                 const title = (tab.title || '').toLowerCase();
                 const url = (tab.url || '').toLowerCase();
                 return title.includes(q) || url.includes(q);
-            }).map(tab => ({
-                title: tab.title,
-                url: tab.url,
-                type: 'tab',
-                tabId: tab.id,
-                windowId: tab.windowId,
-                active: !!tab.active,
-                pinned: !!tab.pinned,
-                // 作为排序参考；有些环境提供 lastAccessed
-                lastAccessed: tab.lastAccessed || 0,
-                // 回退时间，用于与历史/书签对齐的排序字段名
-                lastVisitTime: tab.lastAccessed || Date.now()
-            }));
+            }).map(tab => {
+                const window = windowMap.get(tab.windowId);
+                // 优先使用用户自定义的窗口名称，如果没有则使用窗口标题，最后使用默认格式
+                const defaultWindowTitle = window ? (window.title || `窗口 ${window.id}`) : `窗口 ${tab.windowId}`;
+                const windowTitle = defaultWindowTitle; // 这里暂时使用默认名称，后续会通过消息获取用户自定义名称
+
+                return {
+                    title: tab.title,
+                    url: tab.url,
+                    type: 'tab',
+                    tabId: tab.id,
+                    windowId: tab.windowId,
+                    windowTitle: windowTitle,
+                    active: !!tab.active,
+                    pinned: !!tab.pinned,
+                    // 作为排序参考；有些环境提供 lastAccessed
+                    lastAccessed: tab.lastAccessed || 0,
+                    // 回退时间，用于与历史/书签对齐的排序字段名
+                    lastVisitTime: tab.lastAccessed || Date.now()
+                };
+            });
 
             resolve(filtered);
-        });
+        } catch (error) {
+            reject(error);
+        }
     });
 }
 
@@ -544,11 +586,16 @@ function mergeSourcesByPriority({ tabs = [], bookmarks = [], history = [] }) {
         result.push(item);
     };
 
-    // Tabs 段
-    tabs.forEach(pushWithCheck);
-    // Bookmarks 段
+    // Tabs 段 - 直接添加，不进行去重检查
+    tabs.forEach(item => {
+        if (item && item.url) {
+            result.push(item);
+        }
+    });
+
+    // Bookmarks 段 - 进行去重检查
     bookmarks.forEach(pushWithCheck);
-    // History 段
+    // History 段 - 进行去重检查
     history.forEach(pushWithCheck);
 
     return result;
@@ -1469,6 +1516,22 @@ async function handleGetRecentHistoryRequest(limit, sendResponse) {
         });
     } catch (error) {
         console.error('获取最近历史记录失败:', error);
+        sendResponse({ success: false, error: error.message });
+    }
+}
+
+// 处理获取窗口名称请求
+async function handleGetWindowNamesRequest(sendResponse) {
+    try {
+        // 由于background script无法直接访问localStorage，
+        // 我们需要通过content script来获取窗口名称
+        // 这里我们返回一个空对象，实际的窗口名称获取将在前端处理
+        sendResponse({
+            success: true,
+            windowNames: {}
+        });
+    } catch (error) {
+        console.error('获取窗口名称失败:', error);
         sendResponse({ success: false, error: error.message });
     }
 }

@@ -902,6 +902,12 @@ class SearchModal {
                 color: rgba(255, 255, 255, 0.7);
             }
 
+            .result-item.selected .window-tag {
+                background: rgba(255, 255, 255, 0.2);
+                color: rgba(255, 255, 255, 0.9);
+                border-color: rgba(255, 255, 255, 0.3);
+            }
+
             .result-header {
                 display: flex;
                 justify-content: space-between;
@@ -915,6 +921,13 @@ class SearchModal {
                 gap: 8px;
                 flex: 1;
                 min-width: 0;
+            }
+
+            .result-header-right {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-shrink: 0;
             }
 
             .result-title {
@@ -935,6 +948,20 @@ class SearchModal {
                 color: #2563eb;
                 word-break: break-all;
                 white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .window-tag {
+                background: #e2e8f0;
+                color: #475569;
+                font-size: 10px;
+                font-weight: 500;
+                padding: 2px 6px;
+                border-radius: 4px;
+                border: 1px solid #cbd5e1;
+                white-space: nowrap;
+                max-width: 120px;
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
@@ -2697,6 +2724,14 @@ class SearchModal {
             const typeLabel = this.getTypeLabel(result.type);
             const truncatedUrl = this.truncateUrl(result.url);
 
+            // 对于tab类型，添加窗口标签到标题栏右侧
+            let windowTag = '';
+            if (result.type === 'tab' && result.windowId) {
+                // 获取用户自定义的窗口名称
+                const customWindowName = this.getWindowName(result.windowId, result.windowTitle);
+                windowTag = `<span class="window-tag">${this.escapeHtml(customWindowName)}</span>`;
+            }
+
             return `
                 <div class="result-item" data-url="${result.url}">
                     <div class="result-header">
@@ -2704,7 +2739,10 @@ class SearchModal {
                             <span class="result-type">${typeLabel}</span>
                             <span class="result-title">${this.escapeHtml(result.title)}</span>
                         </div>
-                        <span class="result-date">${formattedDate}</span>
+                        <div class="result-header-right">
+                            ${windowTag}
+                            <span class="result-date">${formattedDate}</span>
+                        </div>
                     </div>
                     <div class="result-url">${this.escapeHtml(truncatedUrl)}</div>
                 </div>
@@ -3507,6 +3545,10 @@ class SearchModal {
         try {
             console.log('请求关闭标签页:', tabId);
 
+            // 记录当前选中的索引
+            const currentIndex = this.selectedIndex;
+            const currentResult = this.results[currentIndex];
+
             // 通过消息传递到background script处理
             const response = await this.sendMessageToBackground({
                 action: 'closeTab',
@@ -3515,14 +3557,274 @@ class SearchModal {
 
             if (response.success) {
                 console.log('成功关闭标签页:', tabId);
-                // 关闭后重新加载标签页列表
-                this.loadAllTabs();
+
+                // 从当前结果中移除被关闭的tab
+                this.removeTabFromResults(tabId, currentIndex);
             } else {
                 console.error('关闭标签页失败:', response.error);
             }
         } catch (error) {
             console.error('关闭标签页出错:', error);
         }
+    }
+
+    // 从结果中移除指定的tab并保持选择状态
+    removeTabFromResults(tabId, currentIndex) {
+        // 从results数组中移除被关闭的tab
+        const tabIndex = this.results.findIndex(result => result.tabId === tabId);
+        if (tabIndex !== -1) {
+            this.results.splice(tabIndex, 1);
+        }
+
+        // 调整选择索引
+        let newIndex = currentIndex;
+        if (tabIndex !== -1) {
+            if (tabIndex < currentIndex) {
+                // 如果被删除的tab在当前选中tab之前，索引需要减1
+                newIndex = currentIndex - 1;
+            } else if (tabIndex === currentIndex) {
+                // 如果被删除的就是当前选中的tab，选择前一个
+                newIndex = Math.max(0, currentIndex - 1);
+            }
+            // 如果被删除的tab在当前选中tab之后，索引不变
+        }
+
+        // 确保索引不超出范围
+        if (newIndex >= this.results.length) {
+            newIndex = Math.max(0, this.results.length - 1);
+        }
+
+        // 更新选择状态
+        this.selectedIndex = newIndex;
+
+        // 重新渲染结果
+        this.refreshResultsDisplay();
+
+        // 如果还有结果，更新选择状态
+        if (this.results.length > 0) {
+            this.updateSelection();
+        }
+    }
+
+    // 刷新结果显示（不重新获取数据）
+    refreshResultsDisplay() {
+        const resultsContainer = this.modal.querySelector('#resultsContainer');
+        if (!resultsContainer) return;
+
+        // 保存AI推荐模块（如果存在）
+        const aiDetection = resultsContainer.querySelector('.ai-detection');
+
+        if (this.results.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="no-results">
+                    <p>No results. Try different keywords.</p>
+                </div>
+            `;
+        } else {
+            // 检查当前是否在tab搜索模式（有windowGroups数据）
+            if (this.windowGroups && this.windowGroups.length > 0) {
+                // 使用分组显示格式（tab搜索页面）
+                this.refreshGroupedResultsDisplay();
+            } else {
+                // 使用简单列表格式（默认搜索页面）
+                this.refreshSimpleResultsDisplay();
+            }
+        }
+
+        // 如果有AI推荐模块，重新插入到最前面
+        if (aiDetection) {
+            resultsContainer.insertBefore(aiDetection, resultsContainer.firstChild);
+        }
+    }
+
+    // 刷新分组结果显示（tab搜索页面）
+    refreshGroupedResultsDisplay() {
+        const resultsContainer = this.modal.querySelector('#resultsContainer');
+        if (!resultsContainer) return;
+
+        // 重新构建windowGroups数据
+        const windowGroups = this.rebuildWindowGroups();
+
+        const groupsHTML = windowGroups.map((group, groupIndex) => {
+            // 对当前窗口组内的tabs按URL排序
+            const sortedTabs = [...group.tabs].sort((a, b) => {
+                // 去掉URL中?的部分进行排序
+                const urlA = a.url.split('?')[0].toLowerCase();
+                const urlB = b.url.split('?')[0].toLowerCase();
+                return urlA.localeCompare(urlB);
+            });
+
+            const tabsHTML = sortedTabs.map((tab, tabIndex) => {
+                const truncatedUrl = this.truncateUrl(tab.url);
+                const isActive = tab.active ? 'active' : '';
+                const isPinned = tab.pinned ? 'pinned' : '';
+
+                return `
+                    <div class="result-item tab-item ${isActive} ${isPinned}" 
+                         data-url="${tab.url}" 
+                         data-tab-id="${tab.tabId}" 
+                         data-window-id="${tab.windowId}">
+                        <div class="result-header">
+                            <div class="result-header-left">
+                                <span class="result-type">Tab</span>
+                                <span class="result-title">${this.escapeHtml(tab.title)}</span>
+                                ${tab.pinned ? '<span class="pinned-indicator">📌</span>' : ''}
+                            </div>
+                            <div class="tab-actions">
+                                <button class="close-tab-btn" data-tab-id="${tab.tabId}" title="Close tab">×</button>
+                            </div>
+                        </div>
+                        <div class="result-url">${this.escapeHtml(truncatedUrl)}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // 使用保存的窗口名称，如果没有则使用默认名称
+            const displayName = this.getWindowName(group.windowId, group.windowTitle);
+
+            // 检查是否有多个窗口（用于决定是否显示菜单按钮）
+            const hasMultipleWindows = windowGroups.length > 1;
+
+            return `
+                <div class="window-group">
+                    <div class="window-header">
+                        <div class="window-title-container">
+                            <h4 class="window-title${hasMultipleWindows ? ' has-menu' : ''}" data-window-id="${group.windowId}" title="Click to rename window">${this.escapeHtml(displayName)}</h4>
+                            ${hasMultipleWindows ? `<button class="window-menu-btn" data-window-id="${group.windowId}" title="合并窗口">merge</button>` : ''}
+                        </div>
+                        <span class="tab-count">${group.tabs.length} tabs</span>
+                    </div>
+                    <div class="tabs-list">
+                        ${tabsHTML}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        resultsContainer.innerHTML = groupsHTML;
+
+        // 重新绑定事件
+        this.bindTabEvents();
+    }
+
+    // 刷新简单结果显示（默认搜索页面）
+    refreshSimpleResultsDisplay() {
+        const resultsContainer = this.modal.querySelector('#resultsContainer');
+        if (!resultsContainer) return;
+
+        // 重新生成HTML
+        const resultsHTML = this.results.map(result => {
+            const date = new Date(result.lastVisitTime || result.dateAdded);
+            const formattedDate = this.formatDate(date);
+            const typeLabel = this.getTypeLabel(result.type);
+            const truncatedUrl = this.truncateUrl(result.url);
+
+            // 对于tab类型，添加窗口标签到标题栏右侧
+            let windowTag = '';
+            if (result.type === 'tab' && result.windowId) {
+                // 获取用户自定义的窗口名称
+                const customWindowName = this.getWindowName(result.windowId, result.windowTitle);
+                windowTag = `<span class="window-tag">${this.escapeHtml(customWindowName)}</span>`;
+            }
+
+            return `
+                <div class="result-item" data-url="${result.url}">
+                    <div class="result-header">
+                        <div class="result-header-left">
+                            <span class="result-type">${typeLabel}</span>
+                            <span class="result-title">${this.escapeHtml(result.title)}</span>
+                        </div>
+                        <div class="result-header-right">
+                            ${windowTag}
+                            <span class="result-date">${formattedDate}</span>
+                        </div>
+                    </div>
+                    <div class="result-url">${this.escapeHtml(truncatedUrl)}</div>
+                </div>
+            `;
+        }).join('');
+
+        resultsContainer.innerHTML = resultsHTML;
+
+        // 重新绑定点击事件
+        this.modal.querySelectorAll('.result-item').forEach((item, index) => {
+            item.addEventListener('click', () => {
+                const result = this.results[index];
+                if (result.type === 'tab') {
+                    // 标签页类型：切换到对应标签页
+                    chrome.tabs.update(result.tabId, { active: true });
+                } else {
+                    // 书签和历史类型：打开新标签页
+                    window.open(result.url, '_blank');
+                }
+                this.close();
+            });
+        });
+    }
+
+    // 重新构建windowGroups数据
+    rebuildWindowGroups() {
+        const windowMap = new Map();
+
+        this.results.forEach(result => {
+            if (result.type === 'tab') {
+                const windowId = result.windowId;
+                if (!windowMap.has(windowId)) {
+                    windowMap.set(windowId, {
+                        windowId: windowId,
+                        windowTitle: result.windowTitle || `Window ${windowId}`,
+                        tabs: []
+                    });
+                }
+                windowMap.get(windowId).tabs.push(result);
+            }
+        });
+
+        return Array.from(windowMap.values()).sort((a, b) => a.windowId - b.windowId);
+    }
+
+    // 绑定tab相关事件
+    bindTabEvents() {
+        // 添加窗口名称编辑事件
+        this.modal.querySelectorAll('.window-title').forEach(titleElement => {
+            titleElement.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.editWindowName(titleElement);
+            });
+        });
+
+        // 添加窗口菜单事件
+        this.modal.querySelectorAll('.window-menu-btn').forEach(menuBtn => {
+            menuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const windowGroups = this.rebuildWindowGroups();
+                this.showWindowMenu(menuBtn, windowGroups);
+            });
+        });
+
+        // 添加点击事件
+        this.modal.querySelectorAll('.tab-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                // 如果点击的是关闭按钮，不切换标签页
+                if (e.target.classList.contains('close-tab-btn')) {
+                    e.stopPropagation();
+                    return;
+                }
+
+                const tabId = parseInt(item.dataset.tabId);
+                const windowId = parseInt(item.dataset.windowId);
+                this.switchToTab(tabId, windowId);
+            });
+        });
+
+        // 添加关闭按钮事件
+        this.modal.querySelectorAll('.close-tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const tabId = parseInt(btn.dataset.tabId);
+                this.closeTab(tabId);
+            });
+        });
     }
 
     // 导航过滤器选项
