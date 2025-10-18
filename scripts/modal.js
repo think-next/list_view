@@ -966,6 +966,121 @@ class SearchModal {
                 text-overflow: ellipsis;
             }
 
+            /* 窗口Tab导航样式 - 浏览器Tab风格 */
+            .window-tabs-container {
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+                backdrop-filter: blur(10px);
+                border-bottom: 2px solid #cbd5e1;
+                margin-bottom: 16px;
+                padding: 8px 0 0 0;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+
+            .window-tabs {
+                display: flex;
+                gap: 2px;
+                overflow-x: auto;
+                padding: 0;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+
+            .window-tabs::-webkit-scrollbar {
+                display: none;
+            }
+
+            .window-tab {
+                background: #e2e8f0;
+                border: 1px solid #cbd5e1;
+                border-bottom: none;
+                border-radius: 8px 8px 0 0;
+                padding: 8px 16px 6px 16px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                white-space: nowrap;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 12px;
+                color: #475569;
+                font-weight: 500;
+                position: relative;
+                min-width: 80px;
+                max-width: 200px;
+                height: 32px;
+                box-sizing: border-box;
+            }
+
+            .window-tab::before {
+                content: '';
+                position: absolute;
+                bottom: -1px;
+                left: 0;
+                right: 0;
+                height: 1px;
+                background: transparent;
+                transition: background-color 0.2s ease;
+            }
+
+            .window-tab:hover {
+                background: #cbd5e1;
+                border-color: #94a3b8;
+                transform: translateY(-1px);
+            }
+
+            .window-tab:hover::before {
+                background: #cbd5e1;
+            }
+
+            .window-tab.active {
+                background: #ffffff;
+                border-color: #2563eb;
+                color: #2563eb;
+                transform: translateY(-1px);
+                z-index: 1;
+                box-shadow: 0 -2px 8px rgba(37, 99, 235, 0.15);
+            }
+
+            .window-tab.active::before {
+                background: #ffffff;
+            }
+
+            .window-tab-name {
+                font-weight: 500;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                flex: 1;
+                min-width: 0;
+            }
+
+            .window-tab-count {
+                background: rgba(71, 85, 105, 0.15);
+                border-radius: 8px;
+                padding: 2px 6px;
+                font-size: 10px;
+                font-weight: 600;
+                min-width: 16px;
+                text-align: center;
+                line-height: 1;
+                color: #64748b;
+            }
+
+            .window-tab.active .window-tab-count {
+                background: rgba(37, 99, 235, 0.15);
+                color: #2563eb;
+            }
+
+            .window-tab:hover .window-tab-count {
+                background: rgba(71, 85, 105, 0.25);
+            }
+
+            .window-tab.active:hover .window-tab-count {
+                background: rgba(37, 99, 235, 0.25);
+            }
+
             .result-type {
                 background: #2563eb;
                 color: white;
@@ -2229,6 +2344,26 @@ class SearchModal {
             return;
         }
 
+        // 添加窗口Tab导航（仅当有多个窗口时显示）
+        let windowTabsHTML = '';
+        if (windowGroups.length > 1) {
+            windowTabsHTML = `
+                <div class="window-tabs-container">
+                    <div class="window-tabs">
+                        ${windowGroups.map((group, index) => {
+                const displayName = this.getWindowName(group.windowId, group.windowTitle);
+                return `
+                                <button class="window-tab" data-window-id="${group.windowId}" data-group-index="${index}">
+                                    <span class="window-tab-name">${this.escapeHtml(displayName)}</span>
+                                    <span class="window-tab-count">${group.tabs.length}</span>
+                                </button>
+                            `;
+            }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
         const groupsHTML = windowGroups.map((group, groupIndex) => {
             // 对当前窗口组内的tabs按URL排序
             const sortedTabs = [...group.tabs].sort((a, b) => {
@@ -2285,12 +2420,15 @@ class SearchModal {
             `;
         }).join('');
 
-        resultsContainer.innerHTML = groupsHTML;
+        resultsContainer.innerHTML = windowTabsHTML + groupsHTML;
 
         // 如果有AI推荐模块，重新插入到最前面
         if (aiDetection) {
             resultsContainer.insertBefore(aiDetection, resultsContainer.firstChild);
         }
+
+        // 绑定窗口Tab导航事件
+        this.bindWindowTabEvents();
 
         // 添加窗口名称编辑事件
         this.modal.querySelectorAll('.window-title').forEach(titleElement => {
@@ -2718,6 +2856,41 @@ class SearchModal {
             return;
         }
 
+        // 检查是否有多个窗口的tab，如果有则添加Tab导航
+        let windowTabsHTML = '';
+        const tabResults = results.filter(result => result.type === 'tab');
+        if (tabResults.length > 0) {
+            const windowIds = [...new Set(tabResults.map(result => result.windowId))];
+            if (windowIds.length > 1) {
+                // 按窗口分组tab结果
+                const windowGroups = windowIds.map(windowId => {
+                    const windowTabs = tabResults.filter(result => result.windowId === windowId);
+                    const firstTab = windowTabs[0];
+                    return {
+                        windowId: windowId,
+                        windowTitle: firstTab.windowTitle || `Window ${windowId}`,
+                        tabs: windowTabs
+                    };
+                });
+
+                windowTabsHTML = `
+                    <div class="window-tabs-container">
+                        <div class="window-tabs">
+                            ${windowGroups.map((group, index) => {
+                    const displayName = this.getWindowName(group.windowId, group.windowTitle);
+                    return `
+                                    <button class="window-tab" data-window-id="${group.windowId}" data-group-index="${index}">
+                                        <span class="window-tab-name">${this.escapeHtml(displayName)}</span>
+                                        <span class="window-tab-count">${group.tabs.length}</span>
+                                    </button>
+                                `;
+                }).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
         const resultsHTML = results.map(result => {
             const date = new Date(result.lastVisitTime || result.dateAdded);
             const formattedDate = this.formatDate(date);
@@ -2749,11 +2922,18 @@ class SearchModal {
             `;
         }).join('');
 
-        resultsContainer.innerHTML = resultsHTML;
+        resultsContainer.innerHTML = windowTabsHTML + resultsHTML;
 
         // 如果有AI推荐模块，重新插入到最前面
         if (aiDetection) {
             resultsContainer.insertBefore(aiDetection, resultsContainer.firstChild);
+        }
+
+        // 绑定窗口Tab导航事件（如果有的话）
+        if (windowTabsHTML) {
+            this.bindWindowTabEvents();
+            // 为默认搜索页面的Tab导航添加特殊的滚动处理
+            this.bindDefaultSearchTabEvents();
         }
 
         // 添加点击事件
@@ -2761,13 +2941,13 @@ class SearchModal {
             item.addEventListener('click', () => {
                 const result = this.results[index];
                 if (result.type === 'tab') {
-                    // 标签页类型：切换到对应标签页
-                    chrome.tabs.update(result.tabId, { active: true });
+                    // 标签页类型：切换到对应标签页（使用与键盘导航相同的逻辑）
+                    this.switchToTab(result.tabId, result.windowId);
                 } else {
                     // 书签和历史类型：打开新标签页
                     window.open(result.url, '_blank');
+                    this.close();
                 }
-                this.close();
             });
         });
     }
@@ -3701,10 +3881,35 @@ class SearchModal {
             `;
         }).join('');
 
-        resultsContainer.innerHTML = groupsHTML;
+        // 添加窗口Tab导航（仅当有多个窗口时显示）
+        let windowTabsHTML = '';
+        if (windowGroups.length > 1) {
+            windowTabsHTML = `
+                <div class="window-tabs-container">
+                    <div class="window-tabs">
+                        ${windowGroups.map((group, index) => {
+                const displayName = this.getWindowName(group.windowId, group.windowTitle);
+                return `
+                                <button class="window-tab" data-window-id="${group.windowId}" data-group-index="${index}">
+                                    <span class="window-tab-name">${this.escapeHtml(displayName)}</span>
+                                    <span class="window-tab-count">${group.tabs.length}</span>
+                                </button>
+                            `;
+            }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        resultsContainer.innerHTML = windowTabsHTML + groupsHTML;
 
         // 重新绑定事件
         this.bindTabEvents();
+
+        // 绑定窗口Tab导航事件
+        if (windowTabsHTML) {
+            this.bindWindowTabEvents();
+        }
     }
 
     // 刷新简单结果显示（默认搜索页面）
@@ -3781,6 +3986,101 @@ class SearchModal {
         });
 
         return Array.from(windowMap.values()).sort((a, b) => a.windowId - b.windowId);
+    }
+
+    // 绑定窗口Tab导航事件
+    bindWindowTabEvents() {
+        this.modal.querySelectorAll('.window-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                const groupIndex = parseInt(tab.dataset.groupIndex);
+                this.scrollToWindowGroup(groupIndex);
+
+                // 更新Tab选中状态
+                this.updateWindowTabSelection(tab);
+            });
+        });
+    }
+
+    // 滚动到指定的窗口组
+    scrollToWindowGroup(groupIndex) {
+        const windowGroups = this.modal.querySelectorAll('.window-group');
+        if (windowGroups[groupIndex]) {
+            // 获取Tab导航的高度，用于调整滚动位置
+            const tabsContainer = this.modal.querySelector('.window-tabs-container');
+            const tabsHeight = tabsContainer ? tabsContainer.offsetHeight : 0;
+
+            // 计算目标位置，考虑固定Tab导航的高度
+            const targetElement = windowGroups[groupIndex];
+            const targetPosition = targetElement.offsetTop - tabsHeight - 20; // 额外20px间距
+
+            // 使用正确的滚动容器：results-section
+            const scrollContainer = this.modal.querySelector('.results-section');
+            if (scrollContainer) {
+                scrollContainer.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                });
+            }
+        }
+    }
+
+    // 更新窗口Tab选中状态
+    updateWindowTabSelection(selectedTab) {
+        // 移除所有Tab的选中状态
+        this.modal.querySelectorAll('.window-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        // 添加选中状态到当前Tab
+        selectedTab.classList.add('active');
+    }
+
+    // 绑定默认搜索页面的Tab导航事件
+    bindDefaultSearchTabEvents() {
+        this.modal.querySelectorAll('.window-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                const windowId = parseInt(tab.dataset.windowId);
+                this.scrollToWindowInDefaultSearch(windowId);
+
+                // 更新Tab选中状态
+                this.updateWindowTabSelection(tab);
+            });
+        });
+    }
+
+    // 在默认搜索页面中滚动到指定窗口的tab
+    scrollToWindowInDefaultSearch(windowId) {
+        const resultItems = this.modal.querySelectorAll('.result-item');
+        let targetItem = null;
+
+        // 找到第一个属于指定窗口的tab
+        for (let i = 0; i < resultItems.length; i++) {
+            const result = this.results[i];
+            if (result && result.type === 'tab' && result.windowId === windowId) {
+                targetItem = resultItems[i];
+                break;
+            }
+        }
+
+        if (targetItem) {
+            // 获取Tab导航的高度
+            const tabsContainer = this.modal.querySelector('.window-tabs-container');
+            const tabsHeight = tabsContainer ? tabsContainer.offsetHeight : 0;
+
+            // 计算目标位置
+            const targetPosition = targetItem.offsetTop - tabsHeight - 20;
+
+            // 使用正确的滚动容器：results-section
+            const scrollContainer = this.modal.querySelector('.results-section');
+            if (scrollContainer) {
+                scrollContainer.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                });
+            }
+        }
     }
 
     // 绑定tab相关事件
