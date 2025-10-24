@@ -875,11 +875,43 @@ class SearchModal {
                 cursor: pointer;
             }
 
+            /* 不同类型搜索结果的背景颜色区分 */
+            .result-item.bookmark-type {
+                background: #f0f9ff; /* 浅蓝色 - 书签 */
+                border-color: #bae6fd;
+            }
+
+            .result-item.history-type {
+                background: #f0fdf4; /* 浅绿色 - 历史记录 */
+                border-color: #bbf7d0;
+            }
+
+            .result-item.tab-type {
+                background: #fefce8; /* 浅黄色 - 标签页 */
+                border-color: #fde68a;
+            }
+
             .result-item:hover {
                 background: #e2e8f0;
                 border-color: #2563eb;
                 transform: translateY(-2px);
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+
+            /* 不同类型搜索结果的hover状态 */
+            .result-item.bookmark-type:hover {
+                background: #dbeafe; /* 书签hover - 稍深的蓝色 */
+                border-color: #2563eb;
+            }
+
+            .result-item.history-type:hover {
+                background: #dcfce7; /* 历史记录hover - 稍深的绿色 */
+                border-color: #2563eb;
+            }
+
+            .result-item.tab-type:hover {
+                background: #fef3c7; /* 标签页hover - 稍深的黄色 */
+                border-color: #2563eb;
             }
 
             .result-item.selected {
@@ -1089,6 +1121,22 @@ class SearchModal {
                 font-size: 10px;
                 font-weight: 600;
                 flex-shrink: 0;
+            }
+
+            /* 不同类型搜索结果的标签颜色 - 与背景色保持一致但更深 */
+            .bookmark-type .result-type {
+                background: #1e40af; /* 深蓝色 - 比背景色深 */
+                color: white;
+            }
+
+            .history-type .result-type {
+                background: #166534; /* 深绿色 - 比背景色深 */
+                color: white;
+            }
+
+            .tab-type .result-type {
+                background: #a16207; /* 深黄色 - 比背景色深 */
+                color: white;
             }
 
             /* AI标签特殊样式 - 橙黄色 */
@@ -2905,14 +2953,39 @@ class SearchModal {
                 windowTag = `<span class="window-tag">${this.escapeHtml(customWindowName)}</span>`;
             }
 
+            // 为不同类型的搜索结果添加相应的功能按钮
+            let actionButtons = '';
+            let folderInfo = '';
+
+            if (result.type === 'tab') {
+                // Tab类型：添加关闭按钮
+                actionButtons = `
+                    <div class="tab-actions">
+                        <button class="close-tab-btn" data-tab-id="${result.tabId}" title="Close tab">×</button>
+                    </div>
+                `;
+            } else if (result.type === 'bookmark') {
+                // Bookmark类型：添加书签目录和删除按钮
+                if (result.folderPath) {
+                    folderInfo = `<span class="bookmark-folder" data-folder-path="${this.escapeHtml(result.folderPath)}">📁 ${this.escapeHtml(result.folderPath)}</span>`;
+                }
+                actionButtons = `
+                    <div class="bookmark-actions">
+                        <button class="delete-bookmark-btn" data-bookmark-id="${result.id}" title="Delete bookmark">×</button>
+                    </div>
+                `;
+            }
+
             return `
-                <div class="result-item" data-url="${result.url}">
+                <div class="result-item ${result.type}-type" data-url="${result.url}" ${result.type === 'tab' ? `data-tab-id="${result.tabId}" data-window-id="${result.windowId}"` : ''} ${result.type === 'bookmark' ? `data-bookmark-id="${result.id}"` : ''}>
                     <div class="result-header">
                         <div class="result-header-left">
                             <span class="result-type">${typeLabel}</span>
                             <span class="result-title">${this.escapeHtml(result.title)}</span>
+                            ${folderInfo}
                         </div>
                         <div class="result-header-right">
+                            ${actionButtons}
                             ${windowTag}
                             <span class="result-date">${formattedDate}</span>
                         </div>
@@ -2938,7 +3011,14 @@ class SearchModal {
 
         // 添加点击事件
         this.modal.querySelectorAll('.result-item').forEach((item, index) => {
-            item.addEventListener('click', () => {
+            item.addEventListener('click', (e) => {
+                // 如果点击的是功能按钮，不处理主点击事件
+                if (e.target.classList.contains('close-tab-btn') ||
+                    e.target.classList.contains('delete-bookmark-btn') ||
+                    e.target.classList.contains('bookmark-folder')) {
+                    return;
+                }
+
                 const result = this.results[index];
                 if (result.type === 'tab') {
                     // 标签页类型：切换到对应标签页（使用与键盘导航相同的逻辑）
@@ -2947,6 +3027,37 @@ class SearchModal {
                     // 书签和历史类型：打开新标签页
                     window.open(result.url, '_blank');
                     this.close();
+                }
+            });
+        });
+
+        // 绑定关闭标签页按钮事件
+        this.modal.querySelectorAll('.close-tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const tabId = parseInt(btn.dataset.tabId);
+                this.closeTab(tabId);
+            });
+        });
+
+        // 绑定删除书签按钮事件
+        this.modal.querySelectorAll('.delete-bookmark-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const bookmarkId = btn.dataset.bookmarkId;
+                if (bookmarkId) {
+                    this.deleteBookmark(bookmarkId);
+                }
+            });
+        });
+
+        // 绑定书签目录点击事件
+        this.modal.querySelectorAll('.bookmark-folder').forEach(folder => {
+            folder.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const folderPath = folder.dataset.folderPath;
+                if (folderPath) {
+                    this.filterBookmarksByFolder(folderPath);
                 }
             });
         });
@@ -3932,14 +4043,39 @@ class SearchModal {
                 windowTag = `<span class="window-tag">${this.escapeHtml(customWindowName)}</span>`;
             }
 
+            // 为不同类型的搜索结果添加相应的功能按钮
+            let actionButtons = '';
+            let folderInfo = '';
+
+            if (result.type === 'tab') {
+                // Tab类型：添加关闭按钮
+                actionButtons = `
+                    <div class="tab-actions">
+                        <button class="close-tab-btn" data-tab-id="${result.tabId}" title="Close tab">×</button>
+                    </div>
+                `;
+            } else if (result.type === 'bookmark') {
+                // Bookmark类型：添加书签目录和删除按钮
+                if (result.folderPath) {
+                    folderInfo = `<span class="bookmark-folder" data-folder-path="${this.escapeHtml(result.folderPath)}">📁 ${this.escapeHtml(result.folderPath)}</span>`;
+                }
+                actionButtons = `
+                    <div class="bookmark-actions">
+                        <button class="delete-bookmark-btn" data-bookmark-id="${result.id}" title="Delete bookmark">×</button>
+                    </div>
+                `;
+            }
+
             return `
-                <div class="result-item" data-url="${result.url}">
+                <div class="result-item ${result.type}-type" data-url="${result.url}" ${result.type === 'tab' ? `data-tab-id="${result.tabId}" data-window-id="${result.windowId}"` : ''} ${result.type === 'bookmark' ? `data-bookmark-id="${result.id}"` : ''}>
                     <div class="result-header">
                         <div class="result-header-left">
                             <span class="result-type">${typeLabel}</span>
                             <span class="result-title">${this.escapeHtml(result.title)}</span>
+                            ${folderInfo}
                         </div>
                         <div class="result-header-right">
+                            ${actionButtons}
                             ${windowTag}
                             <span class="result-date">${formattedDate}</span>
                         </div>
@@ -3953,7 +4089,14 @@ class SearchModal {
 
         // 重新绑定点击事件
         this.modal.querySelectorAll('.result-item').forEach((item, index) => {
-            item.addEventListener('click', () => {
+            item.addEventListener('click', (e) => {
+                // 如果点击的是功能按钮，不处理主点击事件
+                if (e.target.classList.contains('close-tab-btn') ||
+                    e.target.classList.contains('delete-bookmark-btn') ||
+                    e.target.classList.contains('bookmark-folder')) {
+                    return;
+                }
+
                 const result = this.results[index];
                 if (result.type === 'tab') {
                     // 标签页类型：切换到对应标签页
@@ -3963,6 +4106,37 @@ class SearchModal {
                     window.open(result.url, '_blank');
                 }
                 this.close();
+            });
+        });
+
+        // 绑定关闭标签页按钮事件
+        this.modal.querySelectorAll('.close-tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const tabId = parseInt(btn.dataset.tabId);
+                this.closeTab(tabId);
+            });
+        });
+
+        // 绑定删除书签按钮事件
+        this.modal.querySelectorAll('.delete-bookmark-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const bookmarkId = btn.dataset.bookmarkId;
+                if (bookmarkId) {
+                    this.deleteBookmark(bookmarkId);
+                }
+            });
+        });
+
+        // 绑定书签目录点击事件
+        this.modal.querySelectorAll('.bookmark-folder').forEach(folder => {
+            folder.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const folderPath = folder.dataset.folderPath;
+                if (folderPath) {
+                    this.filterBookmarksByFolder(folderPath);
+                }
             });
         });
     }
