@@ -14,6 +14,10 @@ class SearchModal {
         this.currentSelectedFolder = null; // 当前选定的书签分组
         this.allBookmarks = []; // 存储所有书签的原始数据
 
+        // 默认搜索状态管理
+        this.previousSearchResults = []; // 存储之前的搜索结果
+        this.previousSearchQuery = ''; // 存储之前的搜索查询
+
         // AI调用状态管理
         this.aiCallInProgress = false;
         this.currentAIQuery = null;
@@ -2188,6 +2192,12 @@ class SearchModal {
                 return;
             }
 
+            // 如果有选定的分组且在默认搜索模式下，在分组内搜索
+            if (this.currentSelectedFolder && !this.activeFilter) {
+                this.searchInFolder(query);
+                return;
+            }
+
             // 通过消息传递请求background script进行搜索
             const response = await this.sendMessageToBackground({
                 action: 'searchBookmarksAndHistory',
@@ -2202,6 +2212,8 @@ class SearchModal {
                     // 书签模式下使用书签展示方式
                     this.displayBookmarkResults(response.results);
                 } else {
+                    // 默认搜索模式：保存搜索结果用于后续恢复
+                    this.results = response.results;
                     this.displayResults(response.results);
                 }
 
@@ -3057,10 +3069,47 @@ class SearchModal {
                 e.stopPropagation();
                 const folderPath = folder.dataset.folderPath;
                 if (folderPath) {
-                    this.filterBookmarksByFolder(folderPath);
+                    // 在默认搜索场景下，进入书签目录视图
+                    this.enterBookmarkFolderView(folderPath);
                 }
             });
         });
+    }
+
+    // 在默认搜索场景下进入书签目录视图
+    async enterBookmarkFolderView(folderPath) {
+        console.log('进入书签目录视图:', folderPath);
+
+        // 保存当前的搜索结果和查询
+        this.previousSearchResults = [...this.results];
+        this.previousSearchQuery = this.modal.querySelector('#searchInput').value;
+
+        // 设置当前选定的文件夹
+        this.currentSelectedFolder = folderPath;
+
+        // 清空搜索框
+        const searchInput = this.modal.querySelector('#searchInput');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+
+        // 确保书签数据已加载
+        if (this.allBookmarks.length === 0) {
+            await this.loadAllBookmarks();
+        }
+
+        // 获取该文件夹下的所有书签
+        const folderBookmarks = this.allBookmarks.filter(bookmark =>
+            bookmark.folderPath === folderPath
+        );
+
+        // 显示该文件夹下的所有书签
+        this.displayBookmarkResults(folderBookmarks);
+
+        // 显示文件夹状态指示器
+        this.showFolderFilterState(folderPath);
+
+        console.log(`显示文件夹 "${folderPath}" 下的 ${folderBookmarks.length} 个书签`);
     }
 
     // 格式化日期
@@ -3726,8 +3775,31 @@ class SearchModal {
             folderStatusIndicator.remove();
         }
 
-        // 显示所有书签
-        this.displayBookmarkResults(this.allBookmarks);
+        // 根据当前模式决定显示内容
+        if (this.activeFilter === 'bookmark') {
+            // 书签模式：显示所有书签
+            this.displayBookmarkResults(this.allBookmarks);
+        } else {
+            // 默认搜索模式：返回到之前的搜索结果或欢迎消息
+            if (this.previousSearchResults.length > 0) {
+                // 恢复之前的搜索结果
+                this.results = [...this.previousSearchResults];
+                this.displayResults(this.results);
+
+                // 恢复搜索框内容
+                const searchInput = this.modal.querySelector('#searchInput');
+                if (searchInput) {
+                    searchInput.value = this.previousSearchQuery;
+                }
+
+                // 清空保存的状态
+                this.previousSearchResults = [];
+                this.previousSearchQuery = '';
+            } else {
+                // 没有之前的搜索结果，显示欢迎消息
+                this.showWelcomeMessage();
+            }
+        }
     }
 
     // 在分组内搜索
@@ -4135,7 +4207,8 @@ class SearchModal {
                 e.stopPropagation();
                 const folderPath = folder.dataset.folderPath;
                 if (folderPath) {
-                    this.filterBookmarksByFolder(folderPath);
+                    // 在默认搜索场景下，进入书签目录视图
+                    this.enterBookmarkFolderView(folderPath);
                 }
             });
         });
