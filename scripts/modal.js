@@ -347,6 +347,61 @@ class SearchModal {
                 color: #dc2626;
             }
 
+            /* 窗口排序按钮样式 */
+            .window-title-container {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .window-sort-btn {
+                background: rgba(99, 102, 241, 0.06); /* subtle gray-blue */
+                border: none;
+                cursor: pointer;
+                width: 30px;
+                height: 30px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%; /* circular */
+                color: #475569;
+                transition: background 0.15s ease, transform 0.08s ease, box-shadow 0.12s ease;
+                box-shadow: none;
+            }
+
+            .window-sort-btn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(2,6,23,0.08);
+            }
+
+            .window-sort-btn:active {
+                transform: translateY(0);
+                box-shadow: 0 2px 4px rgba(2,6,23,0.06);
+            }
+
+            .window-sort-icon {
+                font-size: 14px;
+                pointer-events: none;
+            }
+
+            .window-sort-asc {
+                background: rgba(59,130,246,0.08); /* light blue */
+                color: #2563eb;
+            }
+            .window-sort-asc:hover {
+                background: #eff6ff;
+                color: #1d4ed8;
+            }
+
+            .window-sort-desc {
+                background: rgba(244,63,94,0.06); /* light red/pink */
+                color: #dc2626;
+            }
+            .window-sort-desc:hover {
+                background: #fff1f2;
+                color: #b91c1c;
+            }
+
             /* 模态框主体 */
             .modal-body {
                 flex: 1;
@@ -2469,6 +2524,13 @@ class SearchModal {
                     <div class="window-header">
                         <div class="window-title-container">
                             <h4 class="window-title${hasMultipleWindows ? ' has-menu' : ''}" data-window-id="${group.windowId}" title="Click to rename window">${this.escapeHtml(displayName)}</h4>
+                            <!-- 排序按钮：单独升序与降序 -->
+                            <button class="window-sort-btn window-sort-asc" data-window-id="${group.windowId}" title="Sort Ascending">
+                                <span class="window-sort-icon">↑</span>
+                            </button>
+                            <button class="window-sort-btn window-sort-desc" data-window-id="${group.windowId}" title="Sort Descending">
+                                <span class="window-sort-icon">↓</span>
+                            </button>
                             ${hasMultipleWindows ? `<button class="window-menu-btn" data-window-id="${group.windowId}" title="合并窗口">merge</button>` : ''}
                         </div>
                         <span class="tab-count">${group.tabs.length} tabs</span>
@@ -2497,6 +2559,24 @@ class SearchModal {
                 this.editWindowName(titleElement);
             });
         });
+
+        // 添加窗口排序按钮事件（升序/降序分别绑定）
+        this.modal.querySelectorAll('.window-sort-asc').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const windowId = parseInt(btn.dataset.windowId);
+                this.applySortForWindow(windowId, 'asc', btn);
+            });
+        });
+        this.modal.querySelectorAll('.window-sort-desc').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const windowId = parseInt(btn.dataset.windowId);
+                this.applySortForWindow(windowId, 'desc', btn);
+            });
+        });
+
+        // 添加在真实窗口中应用排序的逻辑（升序/降序按钮会直接在UI与真实窗口内生效）
 
         // 添加窗口菜单事件
         this.modal.querySelectorAll('.window-menu-btn').forEach(menuBtn => {
@@ -4593,6 +4673,65 @@ class SearchModal {
         } catch (error) {
             console.error('获取窗口名称失败:', error);
             return defaultName;
+        }
+    }
+
+    // 对指定窗口按 URL 执行排序（direction: 'asc' | 'desc'）并在真实窗口内应用顺序
+    applySortForWindow(windowId, direction, btn) {
+        try {
+            const groupEl = this.modal.querySelector(`.window-group .tabs-list`) && Array.from(this.modal.querySelectorAll('.window-group')).find(w => {
+                const title = w.querySelector('.window-title');
+                return title && parseInt(title.dataset.windowId) === windowId;
+            });
+
+            if (!groupEl) return;
+
+            const tabsListEl = groupEl.querySelector('.tabs-list');
+            if (!tabsListEl) return;
+
+            // 获取所有tab items
+            const items = Array.from(tabsListEl.querySelectorAll('.tab-item'));
+
+            // 按去掉?参数的URL比较并根据direction排序
+            items.sort((a, b) => {
+                const urlA = (a.dataset.url || '').split('?')[0].toLowerCase();
+                const urlB = (b.dataset.url || '').split('?')[0].toLowerCase();
+                if (urlA < urlB) return direction === 'asc' ? -1 : 1;
+                if (urlA > urlB) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            // 重新附加到DOM
+            items.forEach(it => tabsListEl.appendChild(it));
+
+            // 可选：为按钮设置一个活跃样式
+            if (btn) {
+                btn.classList.add('active');
+                setTimeout(() => btn.classList.remove('active'), 300);
+            }
+
+            // 收集当前tabs顺序对应的tabIds
+            const currentItems = Array.from(tabsListEl.querySelectorAll('.tab-item'));
+            const tabIds = currentItems.map(it => parseInt(it.dataset.tabId)).filter(id => !isNaN(id));
+
+            // 发送消息给background，请求在真实窗口中重排（仅同窗口内）
+            chrome.runtime.sendMessage({
+                action: 'reorderTabsInWindow',
+                windowId: windowId,
+                tabIds: tabIds
+            }, (resp) => {
+                if (chrome.runtime.lastError) {
+                    console.error('发送重排请求失败:', chrome.runtime.lastError);
+                    return;
+                }
+
+                if (!resp || !resp.success) {
+                    console.warn('Reorder failed:', resp && resp.error ? resp.error : 'unknown');
+                }
+            });
+
+        } catch (error) {
+            console.error('应用窗口排序失败:', error);
         }
     }
 

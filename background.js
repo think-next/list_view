@@ -231,6 +231,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({ success: false, error: error.message });
             });
         return true;
+    } else if (request.action === 'reorderTabsInWindow') {
+        // 处理在同一窗口内重排tabs请求
+        handleReorderTabsInWindowRequest(request.windowId, request.tabIds, sendResponse)
+            .catch(error => {
+                console.error('重排tabs失败:', error);
+                sendResponse({ success: false, error: error.message });
+            });
+        return true;
     }
 
     // 未知消息类型
@@ -737,6 +745,46 @@ async function handleCloseTabRequest(tabId, sendResponse) {
             success: false,
             error: error.message
         });
+    }
+}
+
+// 处理同窗口内重排tabs请求
+async function handleReorderTabsInWindowRequest(windowId, tabIds, sendResponse) {
+    try {
+        if (!Array.isArray(tabIds) || tabIds.length === 0) {
+            sendResponse({ success: false, error: 'No tabIds provided' });
+            return;
+        }
+
+        // 获取当前窗口的tabs，验证tabIds都存在且属于该窗口
+        const currentTabs = await new Promise((resolve, reject) => {
+            chrome.tabs.query({ windowId: windowId }, (tabs) => {
+                if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
+                resolve(tabs);
+            });
+        });
+
+        const existingTabIds = new Set(currentTabs.map(t => t.id));
+        const filteredTabIds = tabIds.filter(id => existingTabIds.has(id));
+
+        if (filteredTabIds.length === 0) {
+            sendResponse({ success: false, error: 'No matching tabs found in target window' });
+            return;
+        }
+
+        // We will move the tabs array into index 0 in the specified order.
+        // Note: chrome.tabs.move accepts an array of tabIds and will insert them in that order.
+        await new Promise((resolve, reject) => {
+            chrome.tabs.move(filteredTabIds, { windowId: windowId, index: 0 }, (movedTabs) => {
+                if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
+                resolve(movedTabs);
+            });
+        });
+
+        sendResponse({ success: true });
+    } catch (error) {
+        console.error('handleReorderTabsInWindowRequest error:', error);
+        sendResponse({ success: false, error: error.message });
     }
 }
 
