@@ -223,6 +223,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({ success: false, error: error.message });
             });
         return true;
+    } else if (request.action === 'saveWindowName') {
+        chrome.storage.local.get(['windowNames'], (result) => {
+            const windowNames = result.windowNames || {};
+            windowNames[request.windowId] = request.name;
+            chrome.storage.local.set({ windowNames });
+            sendResponse({ success: true });
+        });
+        return true;
+    } else if (request.action === 'deleteWindowName') {
+        chrome.storage.local.get(['windowNames'], (result) => {
+            const windowNames = result.windowNames || {};
+            delete windowNames[request.windowId];
+            chrome.storage.local.set({ windowNames });
+            sendResponse({ success: true });
+        });
+        return true;
     } else if (request.action === 'getWindowNames') {
         // 处理获取窗口名称请求
         handleGetWindowNamesRequest(sendResponse)
@@ -460,7 +476,7 @@ async function searchTabs(query) {
             }
 
             // 按窗口分组标签页
-            const windowGroups = groupTabsByWindow(tabs, query);
+            const windowGroups = await groupTabsByWindow(tabs, query);
 
             resolve(windowGroups);
         });
@@ -509,7 +525,10 @@ async function searchTabsFlat(query) {
                 const window = windowMap.get(tab.windowId);
                 // 优先使用用户自定义的窗口名称，如果没有则使用窗口标题，最后使用默认格式
                 const defaultWindowTitle = window ? (window.title || `窗口 ${window.id}`) : `窗口 ${tab.windowId}`;
-                const windowTitle = defaultWindowTitle; // 这里暂时使用默认名称，后续会通过消息获取用户自定义名称
+                // 使用自定义窗口名称
+                const customNamesResult = await new Promise(resolve => chrome.storage.local.get(['windowNames'], resolve));
+                const customNames = customNamesResult.windowNames || {};
+                const windowTitle = customNames[window.id] || defaultWindowTitle;
 
                 return {
                     title: tab.title,
@@ -610,8 +629,14 @@ function mergeSourcesByPriority({ tabs = [], bookmarks = [], history = [] }) {
 }
 
 // 按窗口分组标签页
-function groupTabsByWindow(tabs, query) {
+async function groupTabsByWindow(tabs, query) {
     const windowMap = new Map();
+
+    // 获取自定义窗口名称
+    const result = await new Promise(resolve => {
+        chrome.storage.local.get(['windowNames'], resolve);
+    });
+    const customNames = result.windowNames || {};
 
     tabs.forEach(tab => {
         // 如果有关键词，进行过滤
@@ -626,7 +651,7 @@ function groupTabsByWindow(tabs, query) {
         if (!windowMap.has(windowId)) {
             windowMap.set(windowId, {
                 windowId: windowId,
-                windowTitle: `Window ${windowId}`,
+                windowTitle: customNames[windowId] || `Window ${windowId}`,
                 tabs: []
             });
         }
@@ -1462,6 +1487,19 @@ async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendRes
             console.warn('标签页已移动，但源窗口关闭失败');
         }
 
+        // 迁移源窗口的自定义名称到目标窗口
+        try {
+            const namesResult = await new Promise(resolve => chrome.storage.local.get(['windowNames'], resolve));
+            const windowNames = namesResult.windowNames || {};
+            if (windowNames[sourceWindowId] && !windowNames[targetWindowId]) {
+                windowNames[targetWindowId] = windowNames[sourceWindowId];
+            }
+            delete windowNames[sourceWindowId];
+            await chrome.storage.local.set({ windowNames });
+        } catch (error) {
+            console.warn('窗口名称迁移失败:', error);
+        }
+
         // 验证合并结果
         const remainingTabs = await chrome.tabs.query({ windowId: sourceWindowId });
         const targetTabs = await chrome.tabs.query({ windowId: targetWindowId });
@@ -1571,12 +1609,11 @@ async function handleGetRecentHistoryRequest(limit, sendResponse) {
 // 处理获取窗口名称请求
 async function handleGetWindowNamesRequest(sendResponse) {
     try {
-        // 由于background script无法直接访问localStorage，
-        // 我们需要通过content script来获取窗口名称
-        // 这里我们返回一个空对象，实际的窗口名称获取将在前端处理
-        sendResponse({
-            success: true,
-            windowNames: {}
+        chrome.storage.local.get(['windowNames'], (result) => {
+            sendResponse({
+                success: true,
+                windowNames: result.windowNames || {}
+            });
         });
     } catch (error) {
         console.error('获取窗口名称失败:', error);

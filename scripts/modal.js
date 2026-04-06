@@ -2185,6 +2185,24 @@ class SearchModal {
         this.modal.classList.add('show');
         this.isOpen = true;
 
+        // 加载窗口名称缓存
+        this.loadWindowNames();
+
+        // 监听窗口名称变化
+        this._cleanupStorageListener = () => {
+            if (this._storageListener) {
+                chrome.storage.onChanged.removeListener(this._storageListener);
+            }
+        };
+        if (!this._storageListener) {
+            this._storageListener = (changes, area) => {
+                if (area === 'local' && changes.windowNames) {
+                    this.windowNamesCache = changes.windowNames.newValue || {};
+                }
+            };
+            chrome.storage.onChanged.addListener(this._storageListener);
+        }
+
         // 初始化时获取并显示当前的maxResults配置
         this.loadCurrentMaxResults();
 
@@ -4654,21 +4672,36 @@ class SearchModal {
         });
     }
 
-    // 保存窗口名称到localStorage
+    // 保存窗口名称到chrome.storage.local（通过background）
     saveWindowName(windowId, name) {
         try {
-            const savedNames = JSON.parse(localStorage.getItem('windowNames') || '{}');
-            savedNames[windowId] = name;
-            localStorage.setItem('windowNames', JSON.stringify(savedNames));
+            // 更新本地缓存
+            this.windowNamesCache = this.windowNamesCache || {};
+            this.windowNamesCache[windowId] = name;
+            // 通过background保存
+            chrome.runtime.sendMessage({ action: 'saveWindowName', windowId, name });
         } catch (error) {
             console.error('保存窗口名称失败:', error);
         }
     }
 
-    // 获取保存的窗口名称
+    // 从background加载所有窗口名称到缓存
+    async loadWindowNames() {
+        try {
+            const response = await chrome.runtime.sendMessage({ action: 'getWindowNames' });
+            if (response && response.success) {
+                this.windowNamesCache = response.windowNames || {};
+            }
+        } catch (error) {
+            console.error('加载窗口名称失败:', error);
+            this.windowNamesCache = this.windowNamesCache || {};
+        }
+    }
+
+    // 获取保存的窗口名称（从缓存同步读取）
     getWindowName(windowId, defaultName) {
         try {
-            const savedNames = JSON.parse(localStorage.getItem('windowNames') || '{}');
+            const savedNames = this.windowNamesCache || {};
             return savedNames[windowId] || defaultName;
         } catch (error) {
             console.error('获取窗口名称失败:', error);
