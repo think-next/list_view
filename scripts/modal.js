@@ -27,6 +27,9 @@ class SearchModal {
         // AI设置缓存
         this.aiEnabled = null;
 
+        // 窗口切换状态
+        this.activeWindowIndex = 0; // 当前选中的窗口索引
+
         this.init();
     }
 
@@ -787,6 +790,36 @@ class SearchModal {
 
             .tab-item.pinned {
                 border-left: 4px solid #ffc107;
+            }
+
+            .tab-item.duplicate {
+                border-color: #ef4444;
+                border-width: 1.5px;
+                background: #fef2f2;
+                position: relative;
+            }
+
+            .tab-item.duplicate:hover {
+                border-color: #dc2626;
+                box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+            }
+
+            .tab-item.duplicate .duplicate-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 3px;
+                padding: 1px 6px;
+                background: #ef4444;
+                color: white;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 500;
+                line-height: 1.4;
+            }
+
+            .tab-item.duplicate .duplicate-badge::before {
+                content: '⚠';
+                font-size: 11px;
             }
 
 
@@ -2106,6 +2139,22 @@ class SearchModal {
                     this.selectCurrentFilterOption();
                 }
             } else if (this.results.length > 0 || this.windowGroups || this.activeFilter === 'bookmark') {
+                // 多窗口左右切换（仅在tab视图且有多个窗口时生效）
+                if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && this.windowGroups && this.windowGroups.length > 1) {
+                    e.preventDefault();
+                    const windowTabs = this.modal.querySelectorAll('.window-tab');
+                    if (windowTabs.length > 0) {
+                        if (e.key === 'ArrowRight') {
+                            this.activeWindowIndex = (this.activeWindowIndex + 1) % windowTabs.length;
+                        } else {
+                            this.activeWindowIndex = (this.activeWindowIndex - 1 + windowTabs.length) % windowTabs.length;
+                        }
+                        this.scrollToWindowGroup(this.activeWindowIndex);
+                        this.updateWindowTabSelection(windowTabs[this.activeWindowIndex]);
+                    }
+                    return;
+                }
+
                 // 搜索结果导航（包括list tab视图和书签视图）
                 if (e.key === 'ArrowDown' || e.key === 'Tab') {
                     e.preventDefault();
@@ -2428,6 +2477,21 @@ class SearchModal {
         `;
     }
 
+    // 辅助方法：获取tab基础URL（去查询参数和hash）
+    getBaseUrl(url) {
+        return url.split('?')[0].split('#')[0].toLowerCase();
+    }
+
+    // 辅助方法：检测sortedTabs中的重复URL
+    findDuplicateUrls(sortedTabs) {
+        const urlCount = new Map();
+        sortedTabs.forEach(tab => {
+            const baseUrl = this.getBaseUrl(tab.url);
+            urlCount.set(baseUrl, (urlCount.get(baseUrl) || 0) + 1);
+        });
+        return urlCount;
+    }
+
     // 显示分组结果（标签页按窗口分组）
     displayGroupedResults(windowGroups) {
         console.log('显示分组结果:', windowGroups);
@@ -2506,13 +2570,18 @@ class SearchModal {
                 return urlA.localeCompare(urlB);
             });
 
+            // 检测重复tab
+            const urlCount = this.findDuplicateUrls(sortedTabs);
+
             const tabsHTML = sortedTabs.map((tab, tabIndex) => {
                 const truncatedUrl = this.truncateUrl(tab.url);
                 const isActive = tab.active ? 'active' : '';
                 const isPinned = tab.pinned ? 'pinned' : '';
+                const isDuplicate = (urlCount.get(this.getBaseUrl(tab.url)) || 0) > 1 ? 'duplicate' : '';
+                const duplicateBadge = isDuplicate ? '<span class="duplicate-badge">重复</span>' : '';
 
                 return `
-                    <div class="result-item tab-item ${isActive} ${isPinned}" 
+                    <div class="result-item tab-item ${isActive} ${isPinned} ${isDuplicate}" 
                          data-url="${tab.url}" 
                          data-tab-id="${tab.tabId}" 
                          data-window-id="${tab.windowId}">
@@ -2520,6 +2589,7 @@ class SearchModal {
                             <div class="result-header-left">
                                 <span class="result-type">Tab</span>
                                 <span class="result-title">${this.escapeHtml(tab.title)}</span>
+                                ${duplicateBadge}
                                 ${tab.pinned ? '<span class="pinned-indicator">📌</span>' : ''}
                             </div>
                             <div class="tab-actions">
@@ -2569,6 +2639,13 @@ class SearchModal {
 
         // 绑定窗口Tab导航事件
         this.bindWindowTabEvents();
+
+        // 初始化窗口索引，激活第一个窗口tab
+        this.activeWindowIndex = 0;
+        const firstWindowTab = this.modal.querySelector('.window-tab');
+        if (firstWindowTab) {
+            this.updateWindowTabSelection(firstWindowTab);
+        }
 
         // 添加窗口名称编辑事件
         this.modal.querySelectorAll('.window-title').forEach(titleElement => {
@@ -4115,13 +4192,18 @@ class SearchModal {
                 return urlA.localeCompare(urlB);
             });
 
+            // 检测重复tab
+            const urlCount = this.findDuplicateUrls(sortedTabs);
+
             const tabsHTML = sortedTabs.map((tab, tabIndex) => {
                 const truncatedUrl = this.truncateUrl(tab.url);
                 const isActive = tab.active ? 'active' : '';
                 const isPinned = tab.pinned ? 'pinned' : '';
+                const isDuplicate = (urlCount.get(this.getBaseUrl(tab.url)) || 0) > 1 ? 'duplicate' : '';
+                const duplicateBadge = isDuplicate ? '<span class="duplicate-badge">重复</span>' : '';
 
                 return `
-                    <div class="result-item tab-item ${isActive} ${isPinned}" 
+                    <div class="result-item tab-item ${isActive} ${isPinned} ${isDuplicate}" 
                          data-url="${tab.url}" 
                          data-tab-id="${tab.tabId}" 
                          data-window-id="${tab.windowId}">
@@ -4129,6 +4211,7 @@ class SearchModal {
                             <div class="result-header-left">
                                 <span class="result-type">Tab</span>
                                 <span class="result-title">${this.escapeHtml(tab.title)}</span>
+                                ${duplicateBadge}
                                 ${tab.pinned ? '<span class="pinned-indicator">📌</span>' : ''}
                             </div>
                             <div class="tab-actions">
