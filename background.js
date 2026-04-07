@@ -468,19 +468,19 @@ async function searchHistory(query) {
 
 // 搜索当前标签页
 async function searchTabs(query) {
-    return new Promise((resolve, reject) => {
+    const tabs = await new Promise((resolve, reject) => {
         chrome.tabs.query({}, (tabs) => {
             if (chrome.runtime.lastError) {
                 reject(new Error(chrome.runtime.lastError.message));
                 return;
             }
-
-            // 按窗口分组标签页
-            const windowGroups = await groupTabsByWindow(tabs, query);
-
-            resolve(windowGroups);
+            resolve(tabs);
         });
     });
+
+    // 按窗口分组标签页
+    const windowGroups = await groupTabsByWindow(tabs, query);
+    return windowGroups;
 }
 
 // 默认搜索用：扁平化标签页搜索（不分窗口分组）
@@ -516,18 +516,20 @@ async function searchTabsFlat(query) {
             });
 
             const q = (query || '').trim().toLowerCase();
-            const filtered = tabs.filter(tab => {
+            const filteredTabs = tabs.filter(tab => {
                 if (!q) return true;
                 const title = (tab.title || '').toLowerCase();
                 const url = (tab.url || '').toLowerCase();
                 return title.includes(q) || url.includes(q);
-            }).map(tab => {
+            });
+
+            // 批量获取自定义窗口名称
+            const customNamesResult = await new Promise(resolve => chrome.storage.local.get(['windowNames'], resolve));
+            const customNames = customNamesResult.windowNames || {};
+
+            const filtered = filteredTabs.map(tab => {
                 const window = windowMap.get(tab.windowId);
-                // 优先使用用户自定义的窗口名称，如果没有则使用窗口标题，最后使用默认格式
                 const defaultWindowTitle = window ? (window.title || `窗口 ${window.id}`) : `窗口 ${tab.windowId}`;
-                // 使用自定义窗口名称
-                const customNamesResult = await new Promise(resolve => chrome.storage.local.get(['windowNames'], resolve));
-                const customNames = customNamesResult.windowNames || {};
                 const windowTitle = customNames[window.id] || defaultWindowTitle;
 
                 return {
@@ -539,9 +541,7 @@ async function searchTabsFlat(query) {
                     windowTitle: windowTitle,
                     active: !!tab.active,
                     pinned: !!tab.pinned,
-                    // 作为排序参考；有些环境提供 lastAccessed
                     lastAccessed: tab.lastAccessed || 0,
-                    // 回退时间，用于与历史/书签对齐的排序字段名
                     lastVisitTime: tab.lastAccessed || Date.now()
                 };
             });
@@ -633,10 +633,10 @@ async function groupTabsByWindow(tabs, query) {
     const windowMap = new Map();
 
     // 获取自定义窗口名称
-    const result = await new Promise(resolve => {
+    const storageResult = await new Promise(resolve => {
         chrome.storage.local.get(['windowNames'], resolve);
     });
-    const customNames = result.windowNames || {};
+    const customNames = storageResult.windowNames || {};
 
     tabs.forEach(tab => {
         // 如果有关键词，进行过滤
@@ -669,10 +669,10 @@ async function groupTabsByWindow(tabs, query) {
     });
 
     // 转换为数组并按窗口ID排序
-    const result = Array.from(windowMap.values()).sort((a, b) => a.windowId - b.windowId);
+    const groups = Array.from(windowMap.values()).sort((a, b) => a.windowId - b.windowId);
 
     // 对每个窗口组内的tabs按URL排序
-    result.forEach(group => {
+    groups.forEach(group => {
         group.tabs.sort((a, b) => {
             // 去掉URL中?的部分进行排序
             const urlA = a.url.split('?')[0].toLowerCase();
@@ -681,7 +681,7 @@ async function groupTabsByWindow(tabs, query) {
         });
     });
 
-    return result;
+    return groups;
 }
 
 // 处理切换标签页请求
