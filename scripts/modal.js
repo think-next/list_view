@@ -575,6 +575,11 @@ class SearchModal {
                 border-radius: 12px;
                 overflow: hidden;
                 border: 1px solid #e2e8f0;
+                transition: opacity 0.15s ease;
+            }
+
+            .window-group.window-hidden {
+                display: none;
             }
 
             .window-header {
@@ -1097,15 +1102,14 @@ class SearchModal {
                 z-index: 100;
                 background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
                 backdrop-filter: blur(10px);
-                border-bottom: 2px solid #cbd5e1;
-                margin-bottom: 16px;
+                margin-bottom: 0;
                 padding: 8px 0 0 0;
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             }
 
             .window-tabs {
                 display: flex;
-                gap: 2px;
+                gap: 0;
                 overflow-x: auto;
                 padding: 0;
                 scrollbar-width: none;
@@ -1117,59 +1121,60 @@ class SearchModal {
             }
 
             .window-tab {
-                background: #e2e8f0;
-                border: 1px solid #cbd5e1;
-                border-bottom: none;
-                border-radius: 8px 8px 0 0;
-                padding: 8px 16px 6px 16px;
+                background: transparent;
+                border: none;
+                border-bottom: 2px solid transparent;
+                border-radius: 0;
+                padding: 8px 20px;
                 cursor: pointer;
                 transition: all 0.2s ease;
                 white-space: nowrap;
                 display: flex;
                 align-items: center;
                 gap: 6px;
-                font-size: 12px;
-                color: #475569;
+                font-size: 13px;
+                color: #64748b;
                 font-weight: 500;
                 position: relative;
                 min-width: 80px;
                 max-width: 200px;
-                height: 32px;
+                height: 36px;
                 box-sizing: border-box;
             }
 
             .window-tab::before {
                 content: '';
                 position: absolute;
-                bottom: -1px;
+                bottom: -2px;
                 left: 0;
                 right: 0;
-                height: 1px;
+                height: 2px;
                 background: transparent;
                 transition: background-color 0.2s ease;
             }
 
             .window-tab:hover {
-                background: #cbd5e1;
-                border-color: #94a3b8;
-                transform: translateY(-1px);
+                color: #334155;
+                background: rgba(0, 0, 0, 0.03);
+                transform: none;
             }
 
             .window-tab:hover::before {
-                background: #cbd5e1;
+                background: #94a3b8;
             }
 
             .window-tab.active {
-                background: #ffffff;
-                border-color: #2563eb;
+                background: transparent;
+                border-color: transparent;
+                border-bottom: 2px solid #2563eb;
                 color: #2563eb;
-                transform: translateY(-1px);
+                transform: none;
                 z-index: 1;
-                box-shadow: 0 -2px 8px rgba(37, 99, 235, 0.15);
+                box-shadow: none;
             }
 
             .window-tab.active::before {
-                background: #ffffff;
+                background: #2563eb;
             }
 
             .window-tab-name {
@@ -1181,28 +1186,28 @@ class SearchModal {
             }
 
             .window-tab-count {
-                background: rgba(71, 85, 105, 0.15);
-                border-radius: 8px;
-                padding: 2px 6px;
-                font-size: 10px;
+                background: rgba(71, 85, 105, 0.12);
+                border-radius: 10px;
+                padding: 1px 7px;
+                font-size: 11px;
                 font-weight: 600;
-                min-width: 16px;
+                min-width: 18px;
                 text-align: center;
-                line-height: 1;
+                line-height: 1.5;
                 color: #64748b;
             }
 
             .window-tab.active .window-tab-count {
-                background: rgba(37, 99, 235, 0.15);
+                background: rgba(37, 99, 235, 0.12);
                 color: #2563eb;
             }
 
             .window-tab:hover .window-tab-count {
-                background: rgba(71, 85, 105, 0.25);
+                background: rgba(71, 85, 105, 0.2);
             }
 
             .window-tab.active:hover .window-tab-count {
-                background: rgba(37, 99, 235, 0.25);
+                background: rgba(37, 99, 235, 0.2);
             }
 
             .result-type {
@@ -2164,7 +2169,7 @@ class SearchModal {
                         } else {
                             this.activeWindowIndex = (this.activeWindowIndex - 1 + windowTabs.length) % windowTabs.length;
                         }
-                        this.scrollToWindowGroup(this.activeWindowIndex);
+                        this.switchToWindowGroup(this.activeWindowIndex);
                         this.updateWindowTabSelection(windowTabs[this.activeWindowIndex]);
                     }
                     return;
@@ -2670,6 +2675,8 @@ class SearchModal {
         const firstWindowTab = this.modal.querySelector('.window-tab');
         if (firstWindowTab) {
             this.updateWindowTabSelection(firstWindowTab);
+            // 默认只显示第一个窗口
+            this.switchToWindowGroup(0);
         }
 
         // 添加窗口名称编辑事件
@@ -4447,35 +4454,23 @@ class SearchModal {
             tab.addEventListener('click', (e) => {
                 e.preventDefault();
                 const groupIndex = parseInt(tab.dataset.groupIndex);
-                this.scrollToWindowGroup(groupIndex);
-
-                // 更新Tab选中状态
+                this.activeWindowIndex = groupIndex;
+                this.switchToWindowGroup(groupIndex);
                 this.updateWindowTabSelection(tab);
             });
         });
     }
 
-    // 滚动到指定的窗口组
-    scrollToWindowGroup(groupIndex) {
+    // 切换到指定的窗口组（tab切换效果，不滚动）
+    switchToWindowGroup(groupIndex) {
         const windowGroups = this.modal.querySelectorAll('.window-group');
-        if (windowGroups[groupIndex]) {
-            // 获取Tab导航的高度，用于调整滚动位置
-            const tabsContainer = this.modal.querySelector('.window-tabs-container');
-            const tabsHeight = tabsContainer ? tabsContainer.offsetHeight : 0;
-
-            // 计算目标位置，考虑固定Tab导航的高度
-            const targetElement = windowGroups[groupIndex];
-            const targetPosition = targetElement.offsetTop - tabsHeight - 20; // 额外20px间距
-
-            // 使用正确的滚动容器：results-section
-            const scrollContainer = this.modal.querySelector('.results-section');
-            if (scrollContainer) {
-                scrollContainer.scrollTo({
-                    top: targetPosition,
-                    behavior: 'smooth'
-                });
+        windowGroups.forEach((group, index) => {
+            if (index === groupIndex) {
+                group.classList.remove('window-hidden');
+            } else {
+                group.classList.add('window-hidden');
             }
-        }
+        });
     }
 
     // 更新窗口Tab选中状态
