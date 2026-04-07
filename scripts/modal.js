@@ -1226,6 +1226,21 @@ class SearchModal {
                 color: white;
             }
 
+            .tab-item .tab-favicon {
+                width: 18px;
+                height: 18px;
+                border-radius: 3px;
+                flex-shrink: 0;
+                object-fit: contain;
+                background: #f1f5f9;
+                border: 1px solid #e2e8f0;
+            }
+
+            .tab-item.duplicate .tab-favicon {
+                border-color: #fca5a5;
+                background: #fef2f2;
+            }
+
             .tab-type .result-type {
                 background: #a16207; /* 深黄色 - 比背景色深 */
                 color: white;
@@ -2482,6 +2497,16 @@ class SearchModal {
         return url.split('?')[0].split('#')[0].toLowerCase();
     }
 
+    // 辅助方法：从URL提取域名，用于favicon
+    getFaviconUrl(url) {
+        try {
+            const domain = new URL(url).hostname;
+            return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`;
+        } catch (e) {
+            return '';
+        }
+    }
+
     // 辅助方法：检测sortedTabs中的重复URL
     findDuplicateUrls(sortedTabs) {
         const urlCount = new Map();
@@ -2587,7 +2612,7 @@ class SearchModal {
                          data-window-id="${tab.windowId}">
                         <div class="result-header">
                             <div class="result-header-left">
-                                <span class="result-type">Tab</span>
+                                <img class="tab-favicon" src="${this.getFaviconUrl(tab.url)}" onerror="this.style.display='none'" alt="">
                                 <span class="result-title">${this.escapeHtml(tab.title)}</span>
                                 ${duplicateBadge}
                                 ${tab.pinned ? '<span class="pinned-indicator">📌</span>' : ''}
@@ -4209,7 +4234,7 @@ class SearchModal {
                          data-window-id="${tab.windowId}">
                         <div class="result-header">
                             <div class="result-header-left">
-                                <span class="result-type">Tab</span>
+                                <img class="tab-favicon" src="${this.getFaviconUrl(tab.url)}" onerror="this.style.display='none'" alt="">
                                 <span class="result-title">${this.escapeHtml(tab.title)}</span>
                                 ${duplicateBadge}
                                 ${tab.pinned ? '<span class="pinned-indicator">📌</span>' : ''}
