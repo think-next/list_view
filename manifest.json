@@ -34,15 +34,10 @@
   "background": {
     "service_worker": "background.js"
   },
-  "content_scripts": [
+  "web_accessible_resources": [
     {
-      "js": [
-        "scripts/modal.js",
-        "scripts/content.js"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
+      "resources": ["styles/modal.css"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

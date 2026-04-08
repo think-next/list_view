@@ -1,58 +1,59 @@
 // 测试Chrome API是否可用
 console.log('Background script loaded');
 
-// 监听扩展图标点击事件
-chrome.action.onClicked.addListener((tab) => {
-    try {
-        // 检查标签页是否有效
-        if (!tab || !tab.id) {
-            console.error('无效的标签页');
-            return;
-        }
-
-        // 检查URL是否支持content script
-        if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('moz-extension://')) {
-            console.warn('当前页面不支持content script:', tab.url);
-            return;
-        }
-
-        // 向当前标签页发送消息，显示模态框
-        chrome.tabs.sendMessage(tab.id, { action: 'showModal' }, (response) => {
-            if (chrome.runtime.lastError) {
-                console.error('发送消息失败:', chrome.runtime.lastError.message);
-
-                // 如果content script未加载，尝试注入
-                if (chrome.runtime.lastError.message.includes('Receiving end does not exist')) {
-                    injectContentScript(tab.id);
-                }
-            }
-        });
-
-    } catch (error) {
-        console.error('扩展图标点击处理失败:', error);
-    }
-});
-
-// 注入content script
-async function injectContentScript(tabId) {
+// 注入content script并显示模态框
+async function injectAndShowModal(tabId) {
     try {
         await chrome.scripting.executeScript({
             target: { tabId: tabId },
-            files: ['scripts/modal.js', 'scripts/content.js']
+            files: [
+                'scripts/modules/ui-components.js',
+                'scripts/modules/search.js',
+                'scripts/modules/tabs.js',
+                'scripts/modules/bookmarks.js',
+                'scripts/modules/ai-recommendations.js',
+                'scripts/modules/modal-core.js',
+                'scripts/modal.js',
+                'scripts/content.js'
+            ]
         });
-
-        // 等待一段时间后重试发送消息
         setTimeout(() => {
             chrome.tabs.sendMessage(tabId, { action: 'showModal' }, (response) => {
                 if (chrome.runtime.lastError) {
-                    console.error('重试发送消息失败:', chrome.runtime.lastError.message);
+                    console.error('Send message after inject failed:', chrome.runtime.lastError.message);
                 }
             });
-        }, 500);
-
+        }, 200);
     } catch (error) {
         console.error('注入content script失败:', error);
     }
+}
+
+// 监听扩展图标点击事件
+chrome.action.onClicked.addListener((tab) => {
+    try {
+        if (!tab || !tab.id) {
+            console.error('Invalid tab');
+            return;
+        }
+        if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('moz-extension://')) {
+            console.warn('Page does not support content script:', tab.url);
+            return;
+        }
+        // Try sending message first (script may already be injected)
+        chrome.tabs.sendMessage(tab.id, { action: 'showModal' }, (response) => {
+            if (chrome.runtime.lastError) {
+                injectAndShowModal(tab.id);
+            }
+        });
+    } catch (error) {
+        console.error('Action click handler failed:', error);
+    }
+});
+
+// 注入content script (legacy, kept for fallback)
+async function injectContentScript(tabId) {
+    return injectAndShowModal(tabId);
 }
 
 // 监听键盘快捷键命令
@@ -388,11 +389,11 @@ async function searchBookmarks(query) {
                 for (const node of nodes) {
                     if (node.url) {
                         // 这是一个书签，添加到结果中
-                        // 移除"书签栏"前缀，如果路径以"书签栏/"开头则去掉
+                        // 移除"书签栏"前缀，如果路径以"Bookmarks/"开头则去掉
                         let cleanPath = parentPath || '';
-                        if (cleanPath.startsWith('书签栏/')) {
-                            cleanPath = cleanPath.substring(3); // 移除"书签栏/"（3个字符）
-                        } else if (cleanPath === '书签栏') {
+                        if (cleanPath.startsWith('Bookmarks/')) {
+                            cleanPath = cleanPath.substring(3); // 移除"Bookmarks/"（3个字符）
+                        } else if (cleanPath === 'Bookmarks') {
                             cleanPath = ''; // 如果就是"书签栏"，则设为空
                         }
 
@@ -529,7 +530,7 @@ async function searchTabsFlat(query) {
 
             const filtered = filteredTabs.map(tab => {
                 const window = windowMap.get(tab.windowId);
-                const defaultWindowTitle = window ? (window.title || `窗口 ${window.id}`) : `窗口 ${tab.windowId}`;
+                const defaultWindowTitle = window ? (window.title || `Window ${window.id}`) : `Window ${tab.windowId}`;
                 const windowTitle = customNames[window.id] || defaultWindowTitle;
 
                 return {
@@ -1368,11 +1369,11 @@ async function handleGetAllBookmarksRequest(sendResponse) {
             for (const node of nodes) {
                 if (node.url) {
                     // 这是一个书签，添加到结果中
-                    // 移除"书签栏"前缀，如果路径以"书签栏/"开头则去掉
+                    // 移除"书签栏"前缀，如果路径以"Bookmarks/"开头则去掉
                     let cleanPath = parentPath || '';
-                    if (cleanPath.startsWith('书签栏/')) {
-                        cleanPath = cleanPath.substring(3); // 移除"书签栏/"（3个字符）
-                    } else if (cleanPath === '书签栏') {
+                    if (cleanPath.startsWith('Bookmarks/')) {
+                        cleanPath = cleanPath.substring(3); // 移除"Bookmarks/"（3个字符）
+                    } else if (cleanPath === 'Bookmarks') {
                         cleanPath = ''; // 如果就是"书签栏"，则设为空
                     }
 

@@ -123,11 +123,11 @@ function createFallbackModal() {
         `;
 
         container.innerHTML = `
-            <h2 style="margin: 0 0 20px 0; color: #333;">🔍 搜索功能</h2>
-            <p style="color: #666; margin-bottom: 20px;">SearchModal类加载失败，请检查扩展配置。</p>
+            <h2 style="margin: 0 0 20px 0; color: #333;">🔍 Search</h2>
+            <p style="color: #666; margin-bottom: 20px;">SearchModal failed to load. Please check extension settings.</p>
             <button onclick="this.parentElement.parentElement.remove()" 
                     style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
-                关闭
+                Close
             </button>
         `;
 

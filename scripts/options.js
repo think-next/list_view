@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const maxResultsInput = document.getElementById('maxResults');
     const aiRecommendationToggle = document.getElementById('aiRecommendation');
     const aiTimeoutInput = document.getElementById('aiTimeout');
+    const themeSelect = document.getElementById('themeSelect');
     const saveBtn = document.getElementById('saveSettings');
     const statusMessage = document.getElementById('statusMessage');
 
@@ -64,7 +65,8 @@ document.addEventListener('DOMContentLoaded', function () {
         chrome.storage.local.set({
             maxResults: maxResults,
             aiRecommendation: aiRecommendation,
-            aiTimeout: aiTimeout
+            aiTimeout: aiTimeout,
+            theme: themeSelect.value
         }, function () {
             if (chrome.runtime.lastError) {
                 // 保存失败，显示错误状态
@@ -98,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 加载设置
     function loadSettings() {
-        chrome.storage.local.get(['maxResults', 'aiRecommendation', 'aiTimeout'], function (result) {
+        chrome.storage.local.get(['maxResults', 'aiRecommendation', 'aiTimeout', 'theme'], function (result) {
             if (result.maxResults) {
                 maxResultsInput.value = result.maxResults;
             }
@@ -106,6 +108,31 @@ document.addEventListener('DOMContentLoaded', function () {
             aiRecommendationToggle.checked = result.aiRecommendation === true;
             // 默认AI超时时间30000ms（如果用户未设置过）
             aiTimeoutInput.value = result.aiTimeout || 30000;
+            // Theme
+            themeSelect.value = result.theme || 'auto';
+        });
+    }
+
+    // Toggle donate section
+    const toggleDonateBtn = document.getElementById('toggleDonateBtn');
+    if (toggleDonateBtn) {
+        toggleDonateBtn.addEventListener('click', function () {
+            const content = document.getElementById('donateContent');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                toggleDonateBtn.textContent = 'Hide QR Codes';
+            } else {
+                content.style.display = 'none';
+                toggleDonateBtn.textContent = 'Show QR Codes';
+            }
+        });
+    }
+
+    // Open Chrome shortcuts page
+    const openShortcutsBtn = document.getElementById('openShortcutsBtn');
+    if (openShortcutsBtn) {
+        openShortcutsBtn.addEventListener('click', function () {
+            chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
         });
     }
 
@@ -137,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // 加载使用统计
         chrome.storage.local.get(['totalSearches', 'mostUsedFeature'], function (result) {
             document.getElementById('totalSearches').textContent = result.totalSearches || 0;
-            document.getElementById('mostUsedFeature').textContent = result.mostUsedFeature || '历史记录搜索';
+            document.getElementById('mostUsedFeature').textContent = result.mostUsedFeature || 'History Search';
         });
     }
 

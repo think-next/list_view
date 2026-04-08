@@ -1,0 +1,254 @@
+// ui-components.js - Auto-extracted module for SearchModal
+// Part of the List View Chrome extension
+
+(function() {
+    'use strict';
+
+SearchModal.prototype.showLoading = function() {
+    const loadingIndicator = this.modal.querySelector('#loadingIndicator');
+    const resultsContainer = this.modal.querySelector('#resultsContainer');
+    loadingIndicator.style.display = 'flex';
+    resultsContainer.innerHTML = '';
+    }
+
+    // 显示欢迎信息
+
+SearchModal.prototype.showError = function(message) {
+    const loadingIndicator = this.modal.querySelector('#loadingIndicator');
+    const resultsContainer = this.modal.querySelector('#resultsContainer');
+    loadingIndicator.style.display = 'none';
+    resultsContainer.innerHTML = `
+        <div class="no-results">
+            <p>${message}</p>
+        </div>
+    `;
+    }
+
+    // 辅助方法：获取tab基础URL（去查询参数和hash）
+
+SearchModal.prototype.getBaseUrl = function(url) {
+    return url.split('?')[0].split('#')[0].toLowerCase();
+    }
+
+    // 辅助方法：从URL提取域名，用于favicon
+
+SearchModal.prototype.getFaviconUrl = function(url) {
+    try {
+        const domain = new URL(url).hostname;
+        return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`;
+    } catch (e) {
+        return '';
+    }
+    }
+
+    // 辅助方法：检测sortedTabs中的重复URL
+
+SearchModal.prototype.findDuplicateUrls = function(sortedTabs) {
+    const urlCount = new Map();
+    sortedTabs.forEach(tab => {
+        const baseUrl = this.getBaseUrl(tab.url);
+        urlCount.set(baseUrl, (urlCount.get(baseUrl) || 0) + 1);
+    });
+    return urlCount;
+    }
+
+    // 显示分组结果（标签页按窗口分组）
+
+SearchModal.prototype.formatDate = function(date) {
+    const now = new Date();
+    const diffTime = now - date;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+        return 'Today';
+    } else if (diffDays === 1) {
+        return 'Yesterday';
+    } else if (diffDays < 7) {
+        return `${diffDays}d ago`;
+    } else if (diffDays < 30) {
+        const weeks = Math.floor(diffDays / 7);
+        return `${weeks}w ago`;
+    } else {
+        return date.toLocaleDateString('zh-CN');
+    }
+    }
+
+    // HTML转义
+
+SearchModal.prototype.escapeHtml = function(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+    }
+
+    // 高亮搜索匹配文本
+    SearchModal.prototype.highlightText = function(text, query) {
+        if (!text || !query || !query.trim()) return this.escapeHtml(text);
+        const escaped = this.escapeHtml(text);
+        const queryTerms = query.trim().split(/\s+/).filter(Boolean);
+        // Build regex with all terms, matching whole tokens
+        const pattern = queryTerms.map(term =>
+            term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        ).join('|');
+        if (!pattern) return escaped;
+        const regex = new RegExp(`(${pattern})`, 'gi');
+        return escaped.replace(regex, '<mark class="search-highlight">$1</mark>');
+    }
+
+    // URL截取
+
+SearchModal.prototype.truncateUrl = function(url, maxLength = 300) {
+    if (!url) return '';
+    if (url.length <= maxLength) return url;
+    return url.substring(0, maxLength) + '...';
+    }
+
+    // 导航搜索结果
+
+SearchModal.prototype.navigateResults = function(direction) {
+    let totalItems = this.results.length;
+
+    // 如果是书签模式，使用书签项的数量
+    if (this.activeFilter === 'bookmark') {
+        const bookmarkItems = this.modal.querySelectorAll('.bookmark-item');
+        totalItems = bookmarkItems.length;
+    }
+
+    // 在默认搜索模式下，需要包含AI推荐项
+    if (!this.activeFilter) {
+        const aiItems = this.modal.querySelectorAll('.ai-result-item');
+        totalItems += aiItems.length;
+    }
+
+    if (totalItems === 0) return;
+
+    // 移除之前的选中状态
+    this.updateSelectedItem(-1);
+
+    // 计算新的选中索引
+    if (direction > 0) {
+        // 向下或Tab键
+        this.selectedIndex = (this.selectedIndex + 1) % totalItems;
+    } else {
+        // 向上键
+        this.selectedIndex = this.selectedIndex <= 0 ? totalItems - 1 : this.selectedIndex - 1;
+    }
+
+    // 更新选中状态
+    this.updateSelectedItem(this.selectedIndex);
+    }
+
+    // 更新选中项
+
+SearchModal.prototype.updateSelectedItem = function(index) {
+    const resultItems = this.modal.querySelectorAll('.result-item:not(.ai-result-item)');
+    const bookmarkItems = this.modal.querySelectorAll('.bookmark-item');
+    const aiItems = this.modal.querySelectorAll('.ai-result-item');
+
+    // 在默认搜索模式下，AI推荐项优先显示
+    if (!this.activeFilter && aiItems.length > 0) {
+        const aiItemsCount = aiItems.length;
+
+        // 处理AI推荐项
+        aiItems.forEach((item, i) => {
+            if (i === index) {
+                item.classList.add('selected');
+                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+
+        // 处理常规搜索结果项（调整索引）
+        resultItems.forEach((item, i) => {
+            const adjustedIndex = i + aiItemsCount;
+            if (adjustedIndex === index) {
+                item.classList.add('selected');
+                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    } else {
+        // 其他模式下的正常处理
+        resultItems.forEach((item, i) => {
+            if (i === index) {
+                item.classList.add('selected');
+                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+
+    // 处理书签项
+    bookmarkItems.forEach((item, i) => {
+        if (i === index) {
+            item.classList.add('selected');
+            item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            item.classList.remove('selected');
+        }
+    });
+    }
+
+    // 打开选中的结果
+
+SearchModal.prototype.openSelectedResult = function() {
+    const aiItems = this.modal.querySelectorAll('.ai-result-item');
+    const aiItemsCount = aiItems.length;
+
+    // 在默认搜索模式下，优先处理AI推荐项
+    if (!this.activeFilter && aiItemsCount > 0 && this.selectedIndex < aiItemsCount) {
+        const selectedAIItem = aiItems[this.selectedIndex];
+        const url = selectedAIItem.dataset.url;
+        if (url) {
+            window.open(url, '_blank');
+            this.close();
+        }
+        return;
+    }
+
+    // 处理常规搜索结果项
+    let adjustedIndex = this.selectedIndex;
+    if (!this.activeFilter && aiItemsCount > 0) {
+        adjustedIndex = this.selectedIndex - aiItemsCount;
+    }
+
+    if (adjustedIndex >= 0 && adjustedIndex < this.results.length) {
+        const selectedResult = this.results[adjustedIndex];
+        if (selectedResult.type === 'tab') {
+            // 标签页类型：切换到对应标签页
+            this.switchToTab(selectedResult.tabId, selectedResult.windowId);
+        } else {
+            // 书签和历史类型：打开新标签页
+            window.open(selectedResult.url, '_blank');
+            this.close();
+        }
+    } else if (this.activeFilter === 'bookmark') {
+        // 处理书签模式下的选中项
+        const bookmarkItems = this.modal.querySelectorAll('.bookmark-item');
+        if (this.selectedIndex >= 0 && this.selectedIndex < bookmarkItems.length) {
+            const selectedItem = bookmarkItems[this.selectedIndex];
+            const url = selectedItem.dataset.url;
+            if (url) {
+                chrome.tabs.create({ url: url });
+                this.close();
+            }
+        }
+    }
+    }
+
+    // 处理输入变化
+
+SearchModal.prototype.getTypeLabel = function(type) {
+    const typeLabels = {
+        'bookmark': 'Bookmark',
+        'history': 'History',
+        'tab': 'Tab'
+    };
+    return typeLabels[type] || 'Unknown';
+    }
+
+    // 加载所有标签页
+})();

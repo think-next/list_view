@@ -475,6 +475,38 @@
                     <h2 class="section-title">Settings</h2>
 
                     <div class="setting-group">
+                        <h3>Appearance</h3>
+
+                        <div class="setting-item">
+                            <div>
+                                <div class="setting-label">Theme</div>
+                                <div class="setting-description">Choose light, dark, or follow system preference</div>
+                            </div>
+                            <div>
+                                <select id="themeSelect" style="padding:8px 12px;border:1px solid #dee2e6;border-radius:8px;background:#fff;color:#2c3e50;font-size:14px;outline:none;">
+                                    <option value="auto">Auto (System)</option>
+                                    <option value="light">Light</option>
+                                    <option value="dark">Dark</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Keyboard Shortcut</h3>
+
+                        <div class="setting-item">
+                            <div>
+                                <div class="setting-label">Customize Shortcut</div>
+                                <div class="setting-description">Default: Shift+Ctrl+L (Mac: Shift+Command+L). Chrome does not allow extensions to change shortcuts programmatically.</div>
+                            </div>
+                            <div>
+                                <button id="openShortcutsBtn" class="save-btn" style="font-size:12px;padding:8px 16px;min-width:auto;">Open Chrome Shortcuts</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
                         <h3>Search</h3>
 
                         <div class="setting-item">
@@ -494,8 +526,8 @@
 
                         <div class="setting-item">
                             <div>
-                                <div class="setting-label">AI Recommendations</div>
-                                <div class="setting-description">Enable AI suggestions for your search</div>
+                                <div class="setting-label">AI Recommendations <span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:4px;margin-left:6px;">Experimental</span></div>
+                                <div class="setting-description">Enable AI suggestions for your search. Uses an on-device AI model that needs to be downloaded first.</div>
                             </div>
                             <div class="toggle-container">
                                 <label class="toggle-switch">
@@ -538,8 +570,11 @@
 
                     <div class="info-card">
                         <div class="info-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-                            <span style="font-weight: 600; color: #111827; font-size: 16px;">Donation</span>
-                            <div style="color: #6b7280; font-size: 14px; line-height: 1.5;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                                <span style="font-weight: 600; color: #111827; font-size: 16px;">Donation</span>
+                                <button id="toggleDonateBtn" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;color:#475569;">Show QR Codes</button>
+                            </div>
+                            <div id="donateContent" style="color: #6b7280; font-size: 14px; line-height: 1.5; display:none;">
                                 <p style="margin: 0 0 8px 0;">Thank you for using List View.</p>
                                 <p style="margin: 0 0 8px 0;">Your support will be a great encouragement for me to
                                     continue developing this extension.</p>
