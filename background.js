@@ -17,13 +17,32 @@ async function injectAndShowModal(tabId) {
                 'scripts/content.js'
             ]
         });
-        setTimeout(() => {
-            chrome.tabs.sendMessage(tabId, { action: 'showModal' }, (response) => {
-                if (chrome.runtime.lastError) {
-                    console.error('Send message after inject failed:', chrome.runtime.lastError.message);
-                }
-            });
-        }, 200);
+        // 等待脚本注入并执行完成，再发消息
+        // content.js 的 init() 是同步的，但 SearchModal 类需要先通过 modal.js 注册到 window
+        // 使用更可靠的轮询方式确保 SearchModal 可用
+        await chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            func: () => {
+                return new Promise((resolve) => {
+                    let attempts = 0;
+                    const check = () => {
+                        if (typeof window.SearchModal !== 'undefined') {
+                            resolve(true);
+                        } else if (++attempts < 50) {
+                            setTimeout(check, 50);
+                        } else {
+                            resolve(false);
+                        }
+                    };
+                    check();
+                });
+            }
+        });
+        chrome.tabs.sendMessage(tabId, { action: 'showModal' }, (response) => {
+            if (chrome.runtime.lastError) {
+                console.error('Send message after inject failed:', chrome.runtime.lastError.message);
+            }
+        });
     } catch (error) {
         console.error('注入content script失败:', error);
     }
