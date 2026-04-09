@@ -7,13 +7,13 @@ async function injectAndShowModal(tabId) {
         await chrome.scripting.executeScript({
             target: { tabId: tabId },
             files: [
+                'scripts/modal.js',
                 'scripts/modules/ui-components.js',
                 'scripts/modules/search.js',
                 'scripts/modules/tabs.js',
                 'scripts/modules/bookmarks.js',
                 'scripts/modules/ai-recommendations.js',
                 'scripts/modules/modal-core.js',
-                'scripts/modal.js',
                 'scripts/content.js'
             ]
         });
