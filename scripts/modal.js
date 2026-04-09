@@ -11,32 +11,26 @@
         constructor() {
             this.modal = null;
             this.isOpen = false;
-            this.selectedIndex = -1; // 当前选中的结果索引
-            this.results = []; // 存储搜索结果
-            this.activeFilter = null; // 当前激活的过滤器：'history', 'tab', 'bookmark'
-            this.filterDropdown = null; // 过滤器下拉列表
-            this.filterSelectedIndex = -1; // 当前选中的过滤器选项索引
-            this.allTabs = null; // 存储所有标签页数据
-
-            // 书签分组状态管理
-            this.currentSelectedFolder = null; // 当前选定的书签分组
-            this.allBookmarks = []; // 存储所有书签的原始数据
-
-            // 默认搜索状态管理
-            this.previousSearchResults = []; // 存储之前的搜索结果
-            this.previousSearchQuery = ''; // 存储之前的搜索查询
-
-            // AI调用状态管理
+            this.selectedIndex = -1;
+            this.results = [];
+            this.activeFilter = null;
+            this.filterDropdown = null;
+            this.filterSelectedIndex = -1;
+            this.allTabs = null;
+            this.currentSelectedFolder = null;
+            this.allBookmarks = [];
+            this.previousSearchResults = [];
+            this.previousSearchQuery = '';
             this.aiCallInProgress = false;
             this.currentAIQuery = null;
             this.aiCallAbortController = null;
-            this.aiCallPromise = null;  // 存储当前的AI调用Promise
-
-            // AI设置缓存
+            this.aiCallPromise = null;
             this.aiEnabled = null;
+            this.activeWindowIndex = 0;
 
-            // 窗口切换状态
-            this.activeWindowIndex = 0; // 当前选中的窗口索引
+            // 移除已存在的模态框 DOM（防止重复注入）
+            const existingModal = document.getElementById('searchModal');
+            if (existingModal) existingModal.remove();
 
             this.init();
         }
