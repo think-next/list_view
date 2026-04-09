@@ -1,5 +1,5 @@
 // 测试Chrome API是否可用
-console.log('Background script loaded');
+Logger.info('Background script loaded');
 
 // 注入content script并显示模态框
 async function injectAndShowModal(tabId) {
@@ -7,6 +7,7 @@ async function injectAndShowModal(tabId) {
         await chrome.scripting.executeScript({
             target: { tabId: tabId },
             files: [
+                'scripts/logger.js',
                 'scripts/modal.js',
                 'scripts/modules/ui-components.js',
                 'scripts/modules/search.js',
@@ -40,11 +41,11 @@ async function injectAndShowModal(tabId) {
         });
         chrome.tabs.sendMessage(tabId, { action: 'showModal' }, (response) => {
             if (chrome.runtime.lastError) {
-                console.error('Send message after inject failed:', chrome.runtime.lastError.message);
+                Logger.error('Send message after inject failed:', chrome.runtime.lastError.message);
             }
         });
     } catch (error) {
-        console.error('注入content script失败:', error);
+        Logger.error('注入content script失败:', error);
     }
 }
 
@@ -52,11 +53,11 @@ async function injectAndShowModal(tabId) {
 chrome.action.onClicked.addListener((tab) => {
     try {
         if (!tab || !tab.id) {
-            console.error('Invalid tab');
+            Logger.error('Invalid tab');
             return;
         }
         if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('moz-extension://')) {
-            console.warn('Page does not support content script:', tab.url);
+            Logger.warn('Page does not support content script:', tab.url);
             return;
         }
         // Try sending message first (script may already be injected)
@@ -66,7 +67,7 @@ chrome.action.onClicked.addListener((tab) => {
             }
         });
     } catch (error) {
-        console.error('Action click handler failed:', error);
+        Logger.error('Action click handler failed:', error);
     }
 });
 
@@ -89,20 +90,20 @@ async function handleShortcutTrigger() {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
         if (!tab || !tab.id) {
-            console.error('无法获取当前标签页');
+            Logger.error('无法获取当前标签页');
             return;
         }
 
         // 检查URL是否支持content script
         if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('moz-extension://')) {
-            console.warn('当前页面不支持content script:', tab.url);
+            Logger.warn('当前页面不支持content script:', tab.url);
             return;
         }
 
         // 向当前标签页发送消息，显示模态框
         chrome.tabs.sendMessage(tab.id, { action: 'showModal' }, (response) => {
             if (chrome.runtime.lastError) {
-                console.error('发送消息失败:', chrome.runtime.lastError.message);
+                Logger.error('发送消息失败:', chrome.runtime.lastError.message);
 
                 // 如果content script未加载，尝试注入
                 if (chrome.runtime.lastError.message.includes('Receiving end does not exist')) {
@@ -112,175 +113,85 @@ async function handleShortcutTrigger() {
         });
 
     } catch (error) {
-        console.error('快捷键处理失败:', error);
+        Logger.error('快捷键处理失败:', error);
     }
 }
 
-// 监听来自content script的消息
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-
-    // 同步操作
-    if (request.action === 'contentScriptReady') {
+// 消息路由表：action → handler
+const messageHandlers = {
+    contentScriptReady: (req, sender, sendResponse) => {
         sendResponse({ success: true });
-        return;
-    } else if (request.action === 'openOptionsPage') {
-        // 处理打开选项页面请求
+    },
+    openOptionsPage: (req, sender, sendResponse) => {
         chrome.runtime.openOptionsPage();
         sendResponse({ success: true });
+    },
+    getRecentlyClosed: async () => {
+        const sessions = await chrome.sessions.getRecentlyClosed({ maxResults: 10 });
+        return { success: true, sessions: sessions.map(s => s.tab || s.window).filter(Boolean).slice(0, 10) };
+    },
+    searchBookmarksAndHistory: async (req) => handleSearchRequest(req.query, req.filter),
+    getHistoryStats: async () => handleHistoryStatsRequest(),
+    switchToTab: async (req) => handleSwitchToTabRequest(req.tabId, req.windowId),
+    getAllTabs: async () => handleGetAllTabsRequest(),
+    closeTab: async (req) => handleCloseTabRequest(req.tabId),
+    getMaxResults: async () => handleGetMaxResultsRequest(),
+    getAIRecommendations: async (req) => handleAIRecommendationRequest(req.query),
+    checkAISettings: async () => handleCheckAISettingsRequest(),
+    downloadAIModel: async () => handleDownloadAIModelRequest(),
+    mergeWindows: async (req) => handleMergeWindowsRequest(req.sourceWindowId, req.targetWindowId),
+    getAllBookmarks: async () => handleGetAllBookmarksRequest(),
+    deleteBookmark: async (req) => handleDeleteBookmarkRequest(req.bookmarkId),
+    createTab: async (req) => handleCreateTabRequest(req.url),
+    getRecentHistory: async (req) => handleGetRecentHistoryRequest(req.limit),
+    saveWindowName: (req, sender, sendResponse) => {
+        chrome.storage.local.get(['windowNames'], (result) => {
+            const names = result.windowNames || {};
+            names[req.windowId] = req.name;
+            chrome.storage.local.set({ windowNames: names });
+            sendResponse({ success: true });
+        });
+        return true;
+    },
+    deleteWindowName: (req, sender, sendResponse) => {
+        chrome.storage.local.get(['windowNames'], (result) => {
+            const names = result.windowNames || {};
+            delete names[req.windowId];
+            chrome.storage.local.set({ windowNames: names });
+            sendResponse({ success: true });
+        });
+        return true;
+    },
+    getWindowNames: async () => handleGetWindowNamesRequest(),
+    reorderTabsInWindow: async (req) => handleReorderTabsInWindowRequest(req.windowId, req.tabIds)
+};
+
+// 监听来自content script的消息
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    const handler = messageHandlers[request.action];
+    if (!handler) {
+        Logger.warn('收到未知消息类型:', request.action);
+        sendResponse({ success: false, error: '未知的消息类型' });
         return;
     }
-
-    // 异步操作 - 需要特殊处理
-    if (request.action === 'searchBookmarksAndHistory') {
-        // 处理搜索请求
-        handleSearchRequest(request.query, request.filter, sendResponse)
-            .catch(error => {
-                console.error('搜索请求失败:', error);
-                sendResponse({ success: false, error: error.message });
-            });
-        return true; // 保持消息通道开放
-    } else if (request.action === 'getHistoryStats') {
-        // 处理历史统计请求
-        handleHistoryStatsRequest(sendResponse)
-            .catch(error => {
-                console.error('历史统计请求失败:', error);
-                sendResponse({ success: false, error: error.message });
-            });
-        return true; // 保持消息通道开放
-    } else if (request.action === 'switchToTab') {
-        // 处理切换标签页请求
-        handleSwitchToTabRequest(request.tabId, request.windowId, sendResponse)
-            .catch(error => {
-                console.error('切换标签页失败:', error);
-                sendResponse({ success: false, error: error.message });
-            });
-        return true; // 保持消息通道开放
-    } else if (request.action === 'getAllTabs') {
-        // 处理获取所有标签页请求
-        handleGetAllTabsRequest(sendResponse)
-            .catch(error => {
-                console.error('获取所有标签页失败:', error);
-                sendResponse({ success: false, error: error.message });
-            });
-        return true; // 保持消息通道开放
-    } else if (request.action === 'closeTab') {
-        // 处理关闭标签页请求
-        handleCloseTabRequest(request.tabId, sendResponse)
-            .catch(error => {
-                console.error('关闭标签页失败:', error);
-                sendResponse({ success: false, error: error.message });
-            });
-        return true; // 保持消息通道开放
-    } else if (request.action === 'getMaxResults') {
-        // 处理获取maxResults配置请求
-        handleGetMaxResultsRequest(sendResponse)
-            .catch(error => {
-                console.error('获取maxResults配置失败:', error);
-                sendResponse({ success: false, error: error.message });
-            });
-        return true;
-    } else if (request.action === 'getAIRecommendations') {
-        // 处理AI推荐请求
-        handleAIRecommendationRequest(request.query, sendResponse)
-            .catch(error => {
-                console.error('AI推荐请求失败:', error);
-                sendResponse({ success: false, error: error.message });
-            });
-        return true;
-    } else if (request.action === 'checkAISettings') {
-        // 处理AI设置检查请求
-        handleCheckAISettingsRequest(sendResponse)
-            .catch(error => {
-                console.error('检查AI设置失败:', error);
-                sendResponse({ success: false, error: error.message });
-            });
-        return true;
-    } else if (request.action === 'downloadAIModel') {
-        // 处理AI模型下载请求
-        handleDownloadAIModelRequest(sendResponse)
-            .catch(error => {
-                console.error('AI模型下载失败:', error);
-                sendResponse({ success: false, error: error.message });
-            });
-        return true;
-    } else if (request.action === 'mergeWindows') {
-        // 处理窗口合并请求
-        handleMergeWindowsRequest(request.sourceWindowId, request.targetWindowId, sendResponse)
-            .catch(error => {
-                console.error('窗口合并失败:', error);
-                sendResponse({ success: false, error: error.message });
-            });
-        return true;
-    } else if (request.action === 'getAllBookmarks') {
-        // 处理获取所有书签请求
-        handleGetAllBookmarksRequest(sendResponse)
-            .catch(error => {
-                console.error('获取所有书签失败:', error);
-                sendResponse({ success: false, error: error.message });
-            });
-        return true;
-    } else if (request.action === 'deleteBookmark') {
-        // 处理删除书签请求
-        handleDeleteBookmarkRequest(request.bookmarkId, sendResponse)
-            .catch(error => {
-                console.error('删除书签失败:', error);
-                sendResponse({ success: false, error: error.message });
-            });
-        return true;
-    } else if (request.action === 'createTab') {
-        // 处理创建标签页请求
-        handleCreateTabRequest(request.url, sendResponse)
-            .catch(error => {
-                console.error('创建标签页失败:', error);
-                sendResponse({ success: false, error: error.message });
-            });
-        return true;
-    } else if (request.action === 'getRecentHistory') {
-        // 处理获取最近历史记录请求
-        handleGetRecentHistoryRequest(request.limit, sendResponse)
-            .catch(error => {
-                console.error('获取最近历史记录失败:', error);
-                sendResponse({ success: false, error: error.message });
-            });
-        return true;
-    } else if (request.action === 'saveWindowName') {
-        chrome.storage.local.get(['windowNames'], (result) => {
-            const windowNames = result.windowNames || {};
-            windowNames[request.windowId] = request.name;
-            chrome.storage.local.set({ windowNames });
-            sendResponse({ success: true });
-        });
-        return true;
-    } else if (request.action === 'deleteWindowName') {
-        chrome.storage.local.get(['windowNames'], (result) => {
-            const windowNames = result.windowNames || {};
-            delete windowNames[request.windowId];
-            chrome.storage.local.set({ windowNames });
-            sendResponse({ success: true });
-        });
-        return true;
-    } else if (request.action === 'getWindowNames') {
-        // 处理获取窗口名称请求
-        handleGetWindowNamesRequest(sendResponse)
-            .catch(error => {
-                console.error('获取窗口名称失败:', error);
-                sendResponse({ success: false, error: error.message });
-            });
-        return true;
-    } else if (request.action === 'reorderTabsInWindow') {
-        // 处理在同一窗口内重排tabs请求
-        handleReorderTabsInWindowRequest(request.windowId, request.tabIds, sendResponse)
-            .catch(error => {
-                console.error('重排tabs失败:', error);
-                sendResponse({ success: false, error: error.message });
-            });
-        return true;
+    try {
+        const result = handler(request, sender, sendResponse);
+        if (result && typeof result.then === 'function') {
+            result
+                .then(data => sendResponse(data || { success: true }))
+                .catch(error => {
+                    Logger.error(`${request.action} 失败:`, error);
+                    sendResponse({ success: false, error: error.message });
+                });
+            return true;
+        }
+    } catch (error) {
+        Logger.error(`${request.action} 异常:`, error);
+        sendResponse({ success: false, error: error.message });
     }
-
-    // 未知消息类型
-    console.warn('⚠️ 收到未知消息类型:', request.action);
-    sendResponse({ success: false, error: '未知的消息类型' });
 });
+
+// === 以下为 handler 实现，保持原有函数签名 ===
 
 // 处理搜索请求
 async function handleSearchRequest(query, filter, sendResponse) {
@@ -371,7 +282,7 @@ async function handleSearchRequest(query, filter, sendResponse) {
                 maxResults: maxResults
             });
         } catch (error) {
-            console.error('获取存储配置失败:', error);
+            Logger.error('获取存储配置失败:', error);
             // 使用默认值
             sendResponse({
                 success: true,
@@ -381,7 +292,7 @@ async function handleSearchRequest(query, filter, sendResponse) {
         }
 
     } catch (error) {
-        console.error('搜索出错:', error);
+        Logger.error('搜索出错:', error);
         sendResponse({
             success: false,
             error: error.message
@@ -451,7 +362,7 @@ async function searchBookmarks(query) {
 
             resolve(searchResults);
         } catch (error) {
-            console.error('书签搜索出错:', error);
+            Logger.error('书签搜索出错:', error);
             reject(error);
         }
     });
@@ -711,7 +622,7 @@ async function handleSwitchToTabRequest(tabId, windowId, sendResponse) {
         // 先切换到对应窗口
         chrome.windows.update(windowId, { focused: true }, () => {
             if (chrome.runtime.lastError) {
-                console.error('切换窗口失败:', chrome.runtime.lastError);
+                Logger.error('切换窗口失败:', chrome.runtime.lastError);
                 sendResponse({
                     success: false,
                     error: chrome.runtime.lastError.message
@@ -722,7 +633,7 @@ async function handleSwitchToTabRequest(tabId, windowId, sendResponse) {
             // 然后切换到指定标签页
             chrome.tabs.update(tabId, { active: true }, () => {
                 if (chrome.runtime.lastError) {
-                    console.error('切换标签页失败:', chrome.runtime.lastError);
+                    Logger.error('切换标签页失败:', chrome.runtime.lastError);
                     sendResponse({
                         success: false,
                         error: chrome.runtime.lastError.message
@@ -737,7 +648,7 @@ async function handleSwitchToTabRequest(tabId, windowId, sendResponse) {
             });
         });
     } catch (error) {
-        console.error('切换标签页出错:', error);
+        Logger.error('切换标签页出错:', error);
         sendResponse({
             success: false,
             error: error.message
@@ -757,7 +668,7 @@ async function handleGetAllTabsRequest(sendResponse) {
             results: windowGroups
         });
     } catch (error) {
-        console.error('获取所有标签页失败:', error);
+        Logger.error('获取所有标签页失败:', error);
         sendResponse({
             success: false,
             error: error.message
@@ -771,7 +682,7 @@ async function handleCloseTabRequest(tabId, sendResponse) {
 
         chrome.tabs.remove(tabId, () => {
             if (chrome.runtime.lastError) {
-                console.error('关闭标签页失败:', chrome.runtime.lastError);
+                Logger.error('关闭标签页失败:', chrome.runtime.lastError);
                 sendResponse({
                     success: false,
                     error: chrome.runtime.lastError.message
@@ -785,7 +696,7 @@ async function handleCloseTabRequest(tabId, sendResponse) {
             });
         });
     } catch (error) {
-        console.error('关闭标签页出错:', error);
+        Logger.error('关闭标签页出错:', error);
         sendResponse({
             success: false,
             error: error.message
@@ -828,7 +739,7 @@ async function handleReorderTabsInWindowRequest(windowId, tabIds, sendResponse) 
 
         sendResponse({ success: true });
     } catch (error) {
-        console.error('handleReorderTabsInWindowRequest error:', error);
+        Logger.error('handleReorderTabsInWindowRequest error:', error);
         sendResponse({ success: false, error: error.message });
     }
 }
@@ -848,7 +759,7 @@ async function handleHistoryStatsRequest(sendResponse) {
             maxResults: 1000 // 获取更多记录用于统计
         }, (results) => {
             if (chrome.runtime.lastError) {
-                console.error('获取历史记录失败:', chrome.runtime.lastError);
+                Logger.error('获取历史记录失败:', chrome.runtime.lastError);
                 sendResponse({
                     success: false,
                     error: chrome.runtime.lastError.message
@@ -868,7 +779,7 @@ async function handleHistoryStatsRequest(sendResponse) {
                     stats: topDomains
                 });
             } catch (error) {
-                console.error('处理历史统计失败:', error);
+                Logger.error('处理历史统计失败:', error);
                 sendResponse({
                     success: false,
                     error: error.message
@@ -876,7 +787,7 @@ async function handleHistoryStatsRequest(sendResponse) {
             }
         });
     } catch (error) {
-        console.error('历史统计请求失败:', error);
+        Logger.error('历史统计请求失败:', error);
         sendResponse({
             success: false,
             error: error.message
@@ -915,7 +826,7 @@ function processHistoryForStats(historyItems) {
 
             pathMap.get(path).count += item.visitCount || 1;
         } catch (error) {
-            console.warn('解析URL失败:', item.url, error);
+            Logger.warn('解析URL失败:', item.url, error);
         }
     });
 
@@ -941,7 +852,7 @@ function deduplicateByUrlPath(results) {
                 urlPathMap.set(pathKey, result);
             }
         } catch (error) {
-            console.warn('解析URL失败:', result.url, error);
+            Logger.warn('解析URL失败:', result.url, error);
             // 如果URL解析失败，直接使用原URL作为key
             if (!urlPathMap.has(result.url)) {
                 urlPathMap.set(result.url, result);
@@ -1003,7 +914,7 @@ async function handleGetMaxResultsRequest(sendResponse) {
             maxResults: maxResults
         });
     } catch (error) {
-        console.error('获取maxResults配置失败:', error);
+        Logger.error('获取maxResults配置失败:', error);
         sendResponse({
             success: true,
             maxResults: 12
@@ -1032,18 +943,18 @@ async function handleCheckAISettingsRequest(sendResponse) {
         try {
             // 检查模型可用性
             const availability = await LanguageModel.availability();
-            console.log('模型可用性:', availability);
+            Logger.info('模型可用性:', availability);
 
             if (availability === 'available') {
                 permissionGranted = true;
             } else if (availability === 'downloadable' || availability === 'downloading') {
                 permissionGranted = true;
-                console.log('模型需要下载，但API可用');
+                Logger.info('模型需要下载，但API可用');
             } else {
                 permissionError = `模型不可用，状态: ${availability}`;
             }
         } catch (error) {
-            console.log('AI权限检查失败:', error.message);
+            Logger.info('AI权限检查失败:', error.message);
             permissionError = error.message;
         }
 
@@ -1058,7 +969,7 @@ async function handleCheckAISettingsRequest(sendResponse) {
         });
 
     } catch (error) {
-        console.error('检查AI设置失败:', error);
+        Logger.error('检查AI设置失败:', error);
         sendResponse({
             success: false,
             error: error.message
@@ -1072,7 +983,7 @@ async function handleAIRecommendationRequest(query, sendResponse) {
         const settings = await new Promise((resolve, reject) => {
             chrome.storage.local.get(['aiRecommendation', 'aiTimeout'], (result) => {
                 if (chrome.runtime.lastError) {
-                    console.error('存储API错误:', chrome.runtime.lastError);
+                    Logger.error('存储API错误:', chrome.runtime.lastError);
                     reject(chrome.runtime.lastError);
                 } else {
                     resolve(result);
@@ -1097,7 +1008,7 @@ async function handleAIRecommendationRequest(query, sendResponse) {
                 throw new Error(`模型不可用，状态: ${availability}`);
             }
         } catch (error) {
-            console.error('AI权限检查失败:', error);
+            Logger.error('AI权限检查失败:', error);
             sendResponse({
                 success: false,
                 error: 'AI权限未授权，请在扩展设置中授权AI权限'
@@ -1171,7 +1082,7 @@ async function handleAIRecommendationRequest(query, sendResponse) {
                 initialPrompts: initialPrompts
             });
         } catch (createError) {
-            console.error('AI会话创建失败:', createError);
+            Logger.error('AI会话创建失败:', createError);
             sendResponse({
                 success: false,
                 error: `AI会话创建失败: ${createError.message}`
@@ -1222,7 +1133,7 @@ ${JSON.stringify(limitedContextData, null, 2)}
                 timeoutPromise
             ]);
         } catch (promptError) {
-            console.error('AI调用失败:', promptError);
+            Logger.error('AI调用失败:', promptError);
             sendResponse({
                 success: false,
                 error: `${promptError.message}`
@@ -1236,7 +1147,7 @@ ${JSON.stringify(limitedContextData, null, 2)}
             const responseText = aiResponse || '';
             recommendations = JSON.parse(responseText);
         } catch (parseError) {
-            console.error('JSON解析失败:', parseError);
+            Logger.error('JSON解析失败:', parseError);
             // 如果解析失败，尝试从文本中提取JSON
             try {
                 const jsonMatch = responseText.match(/\[[\s\S]*\]/);
@@ -1251,7 +1162,7 @@ ${JSON.stringify(limitedContextData, null, 2)}
                     }];
                 }
             } catch (extractError) {
-                console.error('JSON提取失败:', extractError);
+                Logger.error('JSON提取失败:', extractError);
                 recommendations = [{
                     title: "AI推荐功能测试",
                     url: "https://www.google.com",
@@ -1266,7 +1177,7 @@ ${JSON.stringify(limitedContextData, null, 2)}
         });
 
     } catch (error) {
-        console.error('AI推荐失败:', error);
+        Logger.error('AI推荐失败:', error);
         sendResponse({
             success: false,
             error: error.message
@@ -1318,7 +1229,7 @@ async function handleDownloadAIModelRequest(sendResponse) {
                 });
                 return;
             } catch (error) {
-                console.error('设置下载进度监听器失败:', error);
+                Logger.error('设置下载进度监听器失败:', error);
                 sendResponse({
                     success: false,
                     error: `监听下载进度失败: ${error.message}`,
@@ -1368,7 +1279,7 @@ async function handleDownloadAIModelRequest(sendResponse) {
         });
 
     } catch (error) {
-        console.error('AI模型下载失败:', error);
+        Logger.error('AI模型下载失败:', error);
         sendResponse({
             success: false,
             error: `模型下载失败: ${error.message}`,
@@ -1421,7 +1332,7 @@ async function handleGetAllBookmarksRequest(sendResponse) {
             results: flatBookmarks
         });
     } catch (error) {
-        console.error('获取书签失败:', error);
+        Logger.error('获取书签失败:', error);
         sendResponse({
             success: false,
             error: error.message
@@ -1439,7 +1350,7 @@ async function handleDeleteBookmarkRequest(bookmarkId, sendResponse) {
             message: '书签删除成功'
         });
     } catch (error) {
-        console.error('删除书签失败:', error);
+        Logger.error('删除书签失败:', error);
         sendResponse({
             success: false,
             error: error.message
@@ -1484,7 +1395,7 @@ async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendRes
             try {
                 await chrome.windows.update(targetWindowId, { state: 'normal' });
             } catch (error) {
-                console.warn('恢复目标窗口失败:', error.message);
+                Logger.warn('恢复目标窗口失败:', error.message);
             }
         }
 
@@ -1504,7 +1415,7 @@ async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendRes
         try {
             await chrome.windows.remove(sourceWindowId);
         } catch (error) {
-            console.warn('标签页已移动，但源窗口关闭失败');
+            Logger.warn('标签页已移动，但源窗口关闭失败');
         }
 
         // 迁移源窗口的自定义名称到目标窗口
@@ -1517,7 +1428,7 @@ async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendRes
             delete windowNames[sourceWindowId];
             await chrome.storage.local.set({ windowNames });
         } catch (error) {
-            console.warn('窗口名称迁移失败:', error);
+            Logger.warn('窗口名称迁移失败:', error);
         }
 
         // 验证合并结果
@@ -1532,7 +1443,7 @@ async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendRes
         });
 
     } catch (error) {
-        console.error('窗口合并失败:', error);
+        Logger.error('窗口合并失败:', error);
 
         // 根据错误类型提供更详细的错误信息
         let errorMessage = error.message;
@@ -1561,7 +1472,7 @@ async function handleCreateTabRequest(url, sendResponse) {
         const tab = await chrome.tabs.create({ url: url });
         sendResponse({ success: true, tabId: tab.id });
     } catch (error) {
-        console.error('创建标签页失败:', error);
+        Logger.error('创建标签页失败:', error);
         sendResponse({ success: false, error: error.message });
     }
 }
@@ -1580,7 +1491,7 @@ async function handleGetRecentHistoryRequest(limit, sendResponse) {
             maxResults: limit * 3 // 获取更多结果用于去重
         }, (historyItems) => {
             if (chrome.runtime.lastError) {
-                console.error('历史记录搜索错误:', chrome.runtime.lastError);
+                Logger.error('历史记录搜索错误:', chrome.runtime.lastError);
                 sendResponse({ success: false, error: chrome.runtime.lastError.message });
                 return;
             }
@@ -1621,7 +1532,7 @@ async function handleGetRecentHistoryRequest(limit, sendResponse) {
             });
         });
     } catch (error) {
-        console.error('获取最近历史记录失败:', error);
+        Logger.error('获取最近历史记录失败:', error);
         sendResponse({ success: false, error: error.message });
     }
 }
@@ -1636,7 +1547,7 @@ async function handleGetWindowNamesRequest(sendResponse) {
             });
         });
     } catch (error) {
-        console.error('获取窗口名称失败:', error);
+        Logger.error('获取窗口名称失败:', error);
         sendResponse({ success: false, error: error.message });
     }
 }

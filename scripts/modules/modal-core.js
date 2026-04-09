@@ -108,7 +108,7 @@ SearchModal.prototype.bindSearchEvents = function() {
                 // 如果输入为空，根据当前过滤器状态显示相应内容
                 if (this.activeFilter === 'history') {
                     // 历史记录模式下，空输入时显示最近20条历史记录
-                    console.log('历史记录模式下输入为空，显示最近20条历史记录');
+                    Logger.info('历史记录模式下输入为空，显示最近20条历史记录');
                     this.loadRecentHistory();
                 } else {
                     // 其他模式下显示欢迎信息
@@ -247,7 +247,7 @@ SearchModal.prototype.showWelcomeMessage = function() {
         }
     } else if (this.activeFilter === 'history') {
         // 如果是历史记录模式，显示最近20条历史记录
-        console.log('历史记录模式下显示欢迎信息，加载最近20条历史记录');
+        Logger.info('历史记录模式下显示欢迎信息，加载最近20条历史记录');
         this.loadRecentHistory();
     } else {
         // Default: try to show search history, fall back to tabs
@@ -266,12 +266,37 @@ SearchModal.prototype.loadCurrentMaxResults = async function() {
             // maxResults配置已获取，但不再需要更新UI显示
         }
     } catch (error) {
-        console.error('获取maxResults配置失败:', error);
+        Logger.error('获取maxResults配置失败:', error);
         // 使用默认值，但不再需要更新UI显示
     }
     }
 
     // 获取AI推荐
+
+// Render results grouped by type with visual section headers
+SearchModal.prototype.groupResultsByType = function(results, query, existingHTML) {
+    const typeOrder = ['tab', 'bookmark', 'history'];
+    const typeLabels = { tab: '🏷️ Open Tabs', bookmark: '🔖 Bookmarks', history: '📊 History' };
+    const sections = new Map();
+    typeOrder.forEach(t => sections.set(t, []));
+    for (const r of results) {
+        if (sections.has(r.type)) sections.get(r.type).push(r);
+    }
+    const activeSections = typeOrder.filter(t => sections.get(t).length > 0);
+    if (activeSections.length <= 1) return existingHTML;
+
+    let idx = 0;
+    const items = existingHTML.split(/(?=<div class="result-item )/);
+    let output = '';
+    for (const type of activeSections) {
+        const count = sections.get(type).length;
+        output += `<div class="result-section-header"><span>${typeLabels[type]}</span><span class="section-count">${count}</span></div>`;
+        for (let i = 0; i < count && idx < items.length; i++, idx++) {
+            output += items[idx];
+        }
+    }
+    return output;
+};
 
 SearchModal.prototype.displayResults = function(results, query = '') {
     const loadingIndicator = this.modal.querySelector('#loadingIndicator');
@@ -288,7 +313,9 @@ SearchModal.prototype.displayResults = function(results, query = '') {
     if (results.length === 0) {
         resultsContainer.innerHTML = `
             <div class="no-results">
-                <p>No results. Try different keywords.</p>
+                <div class="no-results-icon">🔍</div>
+                <p>No results found</p>
+                <p class="no-results-hint">Try different keywords or switch filters</p>
             </div>
         `;
 
@@ -390,7 +417,9 @@ SearchModal.prototype.displayResults = function(results, query = '') {
         `;
     }).join('');
 
-    resultsContainer.innerHTML = windowTabsHTML + resultsHTML;
+    // Group results by type with section headers
+    const groupedHTML = this.groupResultsByType(results, query, resultsHTML);
+    resultsContainer.innerHTML = windowTabsHTML + groupedHTML;
 
     // 如果有AI推荐模块，重新插入到最前面
     if (aiDetection) {
@@ -465,7 +494,7 @@ SearchModal.prototype.showFilterDropdown = function() {
     const dropdown = this.modal.querySelector('#filterDropdown');
 
     if (!dropdown) {
-        console.error('未找到过滤器下拉列表元素');
+        Logger.error('未找到过滤器下拉列表元素');
         return;
     }
 
@@ -525,19 +554,19 @@ SearchModal.prototype.selectFilter = function(filter) {
 
     // 如果是标签页过滤器，立即显示所有标签页
     if (filter === 'tab') {
-        console.log('选择标签页过滤器，立即显示所有标签页');
+        Logger.info('选择标签页过滤器，立即显示所有标签页');
         this.loadAllTabs();
     }
 
     // 如果是书签过滤器，立即显示所有书签
     if (filter === 'bookmark') {
-        console.log('选择书签过滤器，立即显示所有书签');
+        Logger.info('选择书签过滤器，立即显示所有书签');
         this.loadAllBookmarks();
     }
 
     // 如果是历史记录过滤器，立即显示最近20条历史记录
     if (filter === 'history') {
-        console.log('选择历史记录过滤器，立即显示最近20条历史记录');
+        Logger.info('选择历史记录过滤器，立即显示最近20条历史记录');
         this.loadRecentHistory();
     }
     }
@@ -545,12 +574,12 @@ SearchModal.prototype.selectFilter = function(filter) {
     // 更新过滤器标签
 
 SearchModal.prototype.updateFilterTag = function() {
-    console.log('更新过滤器标签，当前过滤器:', this.activeFilter);
+    Logger.info('更新过滤器标签，当前过滤器:', this.activeFilter);
     const filterTag = this.modal.querySelector('#activeFilterTag');
-    console.log('找到过滤器标签元素:', filterTag);
+    Logger.info('找到过滤器标签元素:', filterTag);
 
     if (!filterTag) {
-        console.error('未找到过滤器标签元素');
+        Logger.error('未找到过滤器标签元素');
         return;
     }
 
@@ -563,16 +592,16 @@ SearchModal.prototype.updateFilterTag = function() {
 
         filterTag.textContent = `[${filterNames[this.activeFilter]}]`;
         filterTag.style.display = 'block';
-        console.log('过滤器标签已显示:', filterTag.textContent);
+        Logger.info('过滤器标签已显示:', filterTag.textContent);
 
         // 添加点击清除事件
         filterTag.onclick = () => {
-            console.log('点击清除过滤器');
+            Logger.info('点击清除过滤器');
             this.clearFilter();
         };
     } else {
         filterTag.style.display = 'none';
-        console.log('过滤器标签已隐藏');
+        Logger.info('过滤器标签已隐藏');
     }
     }
 
@@ -812,7 +841,7 @@ SearchModal.prototype.saveWindowName = function(windowId, name) {
         // 通过background保存
         chrome.runtime.sendMessage({ action: 'saveWindowName', windowId, name });
     } catch (error) {
-        console.error('保存窗口名称失败:', error);
+        Logger.error('保存窗口名称失败:', error);
     }
     }
 
@@ -825,7 +854,7 @@ SearchModal.prototype.loadWindowNames = async function() {
             this.windowNamesCache = response.windowNames || {};
         }
     } catch (error) {
-        console.error('加载窗口名称失败:', error);
+        Logger.error('加载窗口名称失败:', error);
         this.windowNamesCache = this.windowNamesCache || {};
     }
     }
@@ -837,7 +866,7 @@ SearchModal.prototype.getWindowName = function(windowId, defaultName) {
         const savedNames = this.windowNamesCache || {};
         return savedNames[windowId] || defaultName;
     } catch (error) {
-        console.error('获取窗口名称失败:', error);
+        Logger.error('获取窗口名称失败:', error);
         return defaultName;
     }
     }
@@ -888,17 +917,17 @@ SearchModal.prototype.applySortForWindow = function(windowId, direction, btn) {
             tabIds: tabIds
         }, (resp) => {
             if (chrome.runtime.lastError) {
-                console.error('发送重排请求失败:', chrome.runtime.lastError);
+                Logger.error('发送重排请求失败:', chrome.runtime.lastError);
                 return;
             }
 
             if (!resp || !resp.success) {
-                console.warn('Reorder failed:', resp && resp.error ? resp.error : 'unknown');
+                Logger.warn('Reorder failed:', resp && resp.error ? resp.error : 'unknown');
             }
         });
 
     } catch (error) {
-        console.error('应用窗口排序失败:', error);
+        Logger.error('应用窗口排序失败:', error);
     }
     }
 
@@ -915,7 +944,7 @@ SearchModal.prototype.showWindowMenu = function(menuBtn, windowGroups) {
 
     // 如果只有一个窗口，不显示菜单
     if (otherWindows.length === 0) {
-        console.log('只有一个窗口，不显示合并菜单');
+        Logger.info('只有一个窗口，不显示合并菜单');
         return;
     }
 
@@ -976,7 +1005,7 @@ SearchModal.prototype.hideWindowMenu = function() {
 
 SearchModal.prototype.mergeWindows = async function(sourceWindowId, targetWindowId) {
     try {
-        console.log(`合并窗口: ${sourceWindowId} -> ${targetWindowId}`);
+        Logger.info(`合并窗口: ${sourceWindowId} -> ${targetWindowId}`);
 
         // 通过消息传递到background script处理
         const response = await this.sendMessageToBackground({
@@ -986,15 +1015,15 @@ SearchModal.prototype.mergeWindows = async function(sourceWindowId, targetWindow
         });
 
         if (response.success) {
-            console.log('窗口合并成功');
+            Logger.info('窗口合并成功');
             // 重新加载标签页列表
             this.loadAllTabs();
         } else {
-            console.error('窗口合并失败:', response.error);
+            Logger.error('窗口合并失败:', response.error);
             alert('Merge failed: ' + response.error);
         }
     } catch (error) {
-        console.error('窗口合并出错:', error);
+        Logger.error('窗口合并出错:', error);
         alert('Merge error');
     }
     }

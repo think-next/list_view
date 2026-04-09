@@ -84,7 +84,7 @@ SearchModal.prototype.batchMoveToNewWindow = function() {
 };
 
 SearchModal.prototype.displayGroupedResults = function(windowGroups) {
-    console.log('显示分组结果:', windowGroups);
+    Logger.info('显示分组结果:', windowGroups);
     const loadingIndicator = this.modal.querySelector('#loadingIndicator');
     const resultsContainer = this.modal.querySelector('#resultsContainer');
     loadingIndicator.style.display = 'none';
@@ -116,7 +116,7 @@ SearchModal.prototype.displayGroupedResults = function(windowGroups) {
     });
 
     if (windowGroups.length === 0) {
-        console.log('没有找到窗口组');
+        Logger.info('没有找到窗口组');
         resultsContainer.innerHTML = `
             <div class="no-results">
                 <p>No matching tabs found</p>
@@ -308,7 +308,7 @@ SearchModal.prototype.displayGroupedResults = function(windowGroups) {
 
 SearchModal.prototype.loadAllTabs = async function() {
     try {
-        console.log('开始加载所有标签页');
+        Logger.info('开始加载所有标签页');
         this.showLoading();
 
         // 通过消息传递请求background script获取所有标签页
@@ -317,15 +317,15 @@ SearchModal.prototype.loadAllTabs = async function() {
         });
 
         if (response.success) {
-            console.log('获取标签页成功:', response.results);
+            Logger.info('获取标签页成功:', response.results);
             this.allTabs = response.results; // 保存所有标签页数据
             this.displayGroupedResults(response.results);
         } else {
-            console.error('获取标签页失败:', response.error);
+            Logger.error('获取标签页失败:', response.error);
             this.showError('Failed to load tabs. Please try again.');
         }
     } catch (error) {
-        console.error('加载标签页出错:', error);
+        Logger.error('加载标签页出错:', error);
         this.showError('Error loading tabs.');
     }
     }
@@ -334,7 +334,7 @@ SearchModal.prototype.loadAllTabs = async function() {
 
 SearchModal.prototype.switchToTab = async function(tabId, windowId) {
     try {
-        console.log('请求切换标签页:', tabId, '窗口:', windowId);
+        Logger.info('请求切换标签页:', tabId, '窗口:', windowId);
 
         // 通过消息传递到background script处理
         const response = await this.sendMessageToBackground({
@@ -344,13 +344,13 @@ SearchModal.prototype.switchToTab = async function(tabId, windowId) {
         });
 
         if (response.success) {
-            console.log('成功切换到标签页:', tabId);
+            Logger.info('成功切换到标签页:', tabId);
             this.close();
         } else {
-            console.error('切换标签页失败:', response.error);
+            Logger.error('切换标签页失败:', response.error);
         }
     } catch (error) {
-        console.error('切换标签页出错:', error);
+        Logger.error('切换标签页出错:', error);
     }
     }
 
@@ -358,7 +358,7 @@ SearchModal.prototype.switchToTab = async function(tabId, windowId) {
 
 SearchModal.prototype.closeTab = async function(tabId) {
     try {
-        console.log('请求关闭标签页:', tabId);
+        Logger.info('请求关闭标签页:', tabId);
 
         // 记录当前选中的索引
         const currentIndex = this.selectedIndex;
@@ -371,15 +371,15 @@ SearchModal.prototype.closeTab = async function(tabId) {
         });
 
         if (response.success) {
-            console.log('成功关闭标签页:', tabId);
+            Logger.info('成功关闭标签页:', tabId);
 
             // 从当前结果中移除被关闭的tab
             this.removeTabFromResults(tabId, currentIndex);
         } else {
-            console.error('关闭标签页失败:', response.error);
+            Logger.error('关闭标签页失败:', response.error);
         }
     } catch (error) {
-        console.error('关闭标签页出错:', error);
+        Logger.error('关闭标签页出错:', error);
     }
     }
 

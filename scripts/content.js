@@ -27,7 +27,7 @@ function showModal() {
     try {
         // 检查页面是否支持模态框
         if (!isPageCompatible()) {
-            console.warn('当前页面不支持模态框');
+            Logger.warn('当前页面不支持模态框');
             return;
         }
 
@@ -39,7 +39,7 @@ function showModal() {
 
         // 检查SearchModal类是否可用
         if (typeof SearchModal === 'undefined') {
-            console.error('SearchModal类未定义');
+            Logger.error('SearchModal类未定义');
             createFallbackModal();
             return;
         }
@@ -51,7 +51,7 @@ function showModal() {
         searchModal.show();
 
     } catch (error) {
-        console.error('显示模态框失败:', error);
+        Logger.error('显示模态框失败:', error);
         // 尝试备用方案：直接创建简单的模态框
         createFallbackModal();
     }
@@ -61,19 +61,19 @@ function showModal() {
 function isPageCompatible() {
     // 检查基本DOM支持
     if (!document.body) {
-        console.warn('页面body未加载');
+        Logger.warn('页面body未加载');
         return false;
     }
 
     // 检查是否在iframe中
     if (window !== window.top) {
-        console.warn('页面在iframe中，可能不支持模态框');
+        Logger.warn('页面在iframe中，可能不支持模态框');
         return false;
     }
 
     // 检查页面是否被冻结
     if (document.visibilityState === 'hidden') {
-        console.warn('页面不可见，跳过模态框显示');
+        Logger.warn('页面不可见，跳过模态框显示');
         return false;
     }
 
@@ -135,7 +135,7 @@ function createFallbackModal() {
         document.body.appendChild(modal);
 
     } catch (fallbackError) {
-        console.error('备用模态框创建失败:', fallbackError);
+        Logger.error('备用模态框创建失败:', fallbackError);
     }
 }
 
@@ -154,7 +154,7 @@ function init() {
         title: document.title
     }, (response) => {
         if (chrome.runtime.lastError) {
-            console.warn('发送就绪信号失败:', chrome.runtime.lastError);
+            Logger.warn('发送就绪信号失败:', chrome.runtime.lastError);
         }
     });
 }

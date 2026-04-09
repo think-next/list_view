@@ -5,7 +5,7 @@
     'use strict';
 
 SearchModal.prototype.getAIRecommendations = async function(query) {
-    console.log('🤖 开始AI推荐分析，查询:', query);
+    Logger.info('🤖 开始AI推荐分析，查询:', query);
 
     try {
         // 设置AI调用状态
@@ -18,7 +18,7 @@ SearchModal.prototype.getAIRecommendations = async function(query) {
         // 显示AI加载状态
         this.showAILoadingState();
 
-        console.log('📤 发送AI推荐请求到background script...');
+        Logger.info('📤 发送AI推荐请求到background script...');
 
         // 创建AI调用Promise
         this.aiCallPromise = this.sendMessageToBackground({
@@ -27,27 +27,27 @@ SearchModal.prototype.getAIRecommendations = async function(query) {
         });
 
         const response = await this.aiCallPromise;
-        console.log('📥 收到AI推荐响应呃呃:', response);
+        Logger.info('📥 收到AI推荐响应呃呃:', response);
 
         // 检查是否已被取消
         if (!this.aiCallInProgress || this.currentAIQuery !== query) {
-            console.log('⚠️ AI调用已被取消，忽略响应');
+            Logger.info('⚠️ AI调用已被取消，忽略响应');
             return;
         }
 
-        console.log('📥 收到AI推荐响应:', response);
+        Logger.info('📥 收到AI推荐响应:', response);
 
         if (response.success) {
-            console.log('✅ AI success, count:', response.recommendations?.length || 0);
-            console.log('📋 Recommendations:', response.recommendations);
+            Logger.info('✅ AI success, count:', response.recommendations?.length || 0);
+            Logger.info('📋 Recommendations:', response.recommendations);
             this.displayAIRecommendations(response.recommendations);
         } else {
-            console.log('❌ AI failed:', response.error);
+            Logger.info('❌ AI failed:', response.error);
             this.hideAILoadingState();
             this.showAIError(response.error || 'Unknown error');
         }
     } catch (error) {
-        console.error('💥 AI error:', error);
+        Logger.error('💥 AI error:', error);
         this.hideAILoadingState();
     } finally {
         // 重置AI调用状态
@@ -60,7 +60,7 @@ SearchModal.prototype.getAIRecommendations = async function(query) {
 
 SearchModal.prototype.cancelCurrentAICall = async function() {
     if (this.aiCallInProgress) {
-        console.log('🛑 取消当前AI调用');
+        Logger.info('🛑 取消当前AI调用');
 
         // 1. 设置取消标志
         this.aiCallInProgress = false;
@@ -69,7 +69,7 @@ SearchModal.prototype.cancelCurrentAICall = async function() {
         // 2. 触发AbortController
         if (this.aiCallAbortController) {
             this.aiCallAbortController.abort();
-            console.log('📡 已发送取消信号到background script');
+            Logger.info('📡 已发送取消信号到background script');
         }
 
         // 3. 等待当前调用完成（如果可能）
@@ -80,7 +80,7 @@ SearchModal.prototype.cancelCurrentAICall = async function() {
                     new Promise((_, reject) => setTimeout(() => reject(new Error('取消超时')), 100))
                 ]);
             } catch (error) {
-                console.log('⏰ AI调用取消完成或超时');
+                Logger.info('⏰ AI调用取消完成或超时');
             }
         }
 
@@ -237,24 +237,24 @@ SearchModal.prototype.showAIError = function(message) {
 SearchModal.prototype.bindAISettingsButton = function() {
     const settingsBtn = this.modal.querySelector('#aiSettingsBtn');
     if (settingsBtn) {
-        console.log('绑定AI设置按钮事件');
+        Logger.info('绑定AI设置按钮事件');
         settingsBtn.addEventListener('click', () => {
-            console.log('AI设置按钮被点击');
+            Logger.info('AI设置按钮被点击');
             // 通过消息传递到background script打开选项页面
             chrome.runtime.sendMessage({
                 action: 'openOptionsPage'
             }, (response) => {
                 if (chrome.runtime.lastError) {
-                    console.error('打开选项页面失败:', chrome.runtime.lastError);
+                    Logger.error('打开选项页面失败:', chrome.runtime.lastError);
                     // 备选方案：直接打开选项页面URL
                     this.openOptionsPageFallback();
                 } else {
-                    console.log('选项页面打开成功');
+                    Logger.info('选项页面打开成功');
                 }
             });
         });
     } else {
-        console.error('未找到AI设置按钮');
+        Logger.error('未找到AI设置按钮');
     }
     }
 
@@ -265,9 +265,9 @@ SearchModal.prototype.openOptionsPageFallback = function() {
         // 尝试直接打开选项页面
         const optionsUrl = chrome.runtime.getURL('options.html');
         window.open(optionsUrl, '_blank');
-        console.log('使用备选方案打开选项页面');
+        Logger.info('使用备选方案打开选项页面');
     } catch (error) {
-        console.error('备选方案也失败:', error);
+        Logger.error('备选方案也失败:', error);
         // 最后的备选方案：显示提示信息
         alert('Open extension settings to configure AI.');
     }
@@ -278,9 +278,9 @@ SearchModal.prototype.openOptionsPageFallback = function() {
 SearchModal.prototype.bindAICheckButton = function() {
     const checkBtn = this.modal.querySelector('#aiCheckBtn');
     if (checkBtn) {
-        console.log('绑定AI检查按钮事件');
+        Logger.info('绑定AI检查按钮事件');
         checkBtn.addEventListener('click', async () => {
-            console.log('AI检查按钮被点击');
+            Logger.info('AI检查按钮被点击');
             try {
                 // 检查当前设置状态
                 const response = await this.sendMessageToBackground({
@@ -305,12 +305,12 @@ SearchModal.prototype.bindAICheckButton = function() {
                     this.showTerminalStatus('Check failed: ' + response.error);
                 }
             } catch (error) {
-                console.error('检查AI状态失败:', error);
+                Logger.error('检查AI状态失败:', error);
                 alert('Check failed. See console for details.');
             }
         });
     } else {
-        console.error('未找到AI检查按钮');
+        Logger.error('未找到AI检查按钮');
     }
     }
 
@@ -372,7 +372,7 @@ SearchModal.prototype.checkAIEnabled = async function() {
         try {
             chrome.storage.local.get(['aiRecommendation'], (result) => {
                 if (chrome.runtime.lastError) {
-                    console.warn('读取AI开关失败:', chrome.runtime.lastError);
+                    Logger.warn('读取AI开关失败:', chrome.runtime.lastError);
                     this.aiEnabled = false;
                     resolve(false);
                     return;
@@ -383,7 +383,7 @@ SearchModal.prototype.checkAIEnabled = async function() {
                 resolve(enabled);
             });
         } catch (e) {
-            console.warn('读取AI开关异常:', e);
+            Logger.warn('读取AI开关异常:', e);
             this.aiEnabled = false;
             resolve(false);
         }
@@ -509,8 +509,8 @@ SearchModal.prototype.bindDownloadButton = function() {
     if (!downloadBtn) return;
 
     downloadBtn.addEventListener('click', async () => {
-        console.log('📥 用户点击Start Download');
-        console.log('📥 准备发送downloadAIModel消息到background script');
+        Logger.info('📥 用户点击Start Download');
+        Logger.info('📥 准备发送downloadAIModel消息到background script');
 
         // 立即移除下载提示模块
         const existingAI = this.modal.querySelector('.ai-recommendations');
@@ -522,17 +522,17 @@ SearchModal.prototype.bindDownloadButton = function() {
         this.showDownloadingPrompt();
 
         try {
-            console.log('📤 发送downloadAIModel消息...');
+            Logger.info('📤 发送downloadAIModel消息...');
             const response = await this.sendMessageToBackground({
                 action: 'downloadAIModel'
             });
-            console.log('📨 收到downloadAIModel响应:', response);
+            Logger.info('📨 收到downloadAIModel响应:', response);
 
             if (response.success) {
-                console.log('✅ 下载请求成功');
+                Logger.info('✅ 下载请求成功');
                 // Download Progress模块已经在上面显示了
             } else {
-                console.error('❌ 下载请求失败:', response.error);
+                Logger.error('❌ 下载请求失败:', response.error);
                 // 移除Download Progress模块，显示错误
                 const downloadingAI = this.modal.querySelector('.ai-recommendations');
                 if (downloadingAI) {
@@ -541,7 +541,7 @@ SearchModal.prototype.bindDownloadButton = function() {
                 this.showAIError(`Download failed: ${response.error}`);
             }
         } catch (error) {
-            console.error('❌ 下载请求异常:', error);
+            Logger.error('❌ 下载请求异常:', error);
             // 移除Download Progress模块，显示错误
             const downloadingAI = this.modal.querySelector('.ai-recommendations');
             if (downloadingAI) {
@@ -559,7 +559,7 @@ SearchModal.prototype.bindCancelButton = function() {
     if (!cancelBtn) return;
 
     cancelBtn.addEventListener('click', () => {
-        console.log('❌ 用户取消下载');
+        Logger.info('❌ 用户取消下载');
         // 移除下载提示框
         const existingAI = this.modal.querySelector('.ai-recommendations');
         if (existingAI) {
@@ -596,7 +596,7 @@ SearchModal.prototype.listenDownloadProgress = function() {
                 }
             }
         } else if (message.action === 'downloadComplete') {
-            console.log('✅ 模型下载完成，重新尝试AI推荐');
+            Logger.info('✅ 模型下载完成，重新尝试AI推荐');
             this.hideAILoadingState();
             // 重新尝试AI推荐
             this.getAIRecommendations(this.currentAIQuery);

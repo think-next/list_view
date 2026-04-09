@@ -18,7 +18,7 @@ SearchModal.prototype.toggleBookmarkSort = function() {
 
 SearchModal.prototype.loadAllBookmarks = async function() {
     try {
-        console.log('开始加载所有书签');
+        Logger.info('开始加载所有书签');
         this.showLoading();
 
         // 通过消息传递请求background script获取所有书签
@@ -27,15 +27,15 @@ SearchModal.prototype.loadAllBookmarks = async function() {
         });
 
         if (response.success) {
-            console.log('获取书签成功:', response.results);
+            Logger.info('获取书签成功:', response.results);
             this.allBookmarks = response.results; // 保存所有书签数据
             this.displayBookmarkResults(response.results);
         } else {
-            console.error('获取书签失败:', response.error);
+            Logger.error('获取书签失败:', response.error);
             this.showError('Failed to load bookmarks. Please try again.');
         }
     } catch (error) {
-        console.error('加载书签出错:', error);
+        Logger.error('加载书签出错:', error);
         this.showError('Error loading bookmarks.');
     }
     }
@@ -43,7 +43,7 @@ SearchModal.prototype.loadAllBookmarks = async function() {
     // 显示书签结果
 
 SearchModal.prototype.displayBookmarkResults = function(bookmarks) {
-    console.log('显示书签结果:', bookmarks);
+    Logger.info('显示书签结果:', bookmarks);
     const loadingIndicator = this.modal.querySelector('#loadingIndicator');
     const resultsContainer = this.modal.querySelector('#resultsContainer');
     const historyStatsSection = this.modal.querySelector('#historyStatsSection');
@@ -199,7 +199,7 @@ SearchModal.prototype.bindBookmarkEvents = function() {
                 }).then(() => {
                     this.close();
                 }).catch(error => {
-                    console.error('创建标签页失败:', error);
+                    Logger.error('创建标签页失败:', error);
                 });
             }
         });
@@ -217,7 +217,7 @@ SearchModal.prototype.bindBookmarkEvents = function() {
                     }).then(() => {
                         this.close();
                     }).catch(error => {
-                        console.error('创建标签页失败:', error);
+                        Logger.error('创建标签页失败:', error);
                     });
                 }
             }
@@ -250,7 +250,7 @@ SearchModal.prototype.bindBookmarkEvents = function() {
     // 按分组过滤书签
 
 SearchModal.prototype.filterBookmarksByFolder = function(folderPath) {
-    console.log('按分组过滤书签:', folderPath);
+    Logger.info('按分组过滤书签:', folderPath);
 
     // 设置当前选定的分组
     this.currentSelectedFolder = folderPath;
@@ -266,7 +266,7 @@ SearchModal.prototype.filterBookmarksByFolder = function(folderPath) {
     // 显示分组状态
     this.showFolderFilterState(folderPath);
 
-    console.log(`显示分组 "${folderPath}" 下的 ${filteredBookmarks.length} 个书签`);
+    Logger.info(`显示分组 "${folderPath}" 下的 ${filteredBookmarks.length} 个书签`);
     }
 
     // 显示分组过滤状态
@@ -305,7 +305,7 @@ SearchModal.prototype.showFolderFilterState = function(folderPath) {
     // 清除分组过滤
 
 SearchModal.prototype.clearFolderFilter = function() {
-    console.log('清除分组过滤');
+    Logger.info('清除分组过滤');
     this.currentSelectedFolder = null;
 
     // 移除搜索框下方的分组状态显示
@@ -357,15 +357,15 @@ SearchModal.prototype.deleteBookmark = async function(bookmarkId) {
         });
 
         if (response.success) {
-            console.log('书签删除成功');
+            Logger.info('书签删除成功');
             // 重新加载书签列表
             this.loadAllBookmarks();
         } else {
-            console.error('删除书签失败:', response.error);
+            Logger.error('删除书签失败:', response.error);
             this.showError('Failed to delete bookmark. Please try again.');
         }
     } catch (error) {
-        console.error('删除书签出错:', error);
+        Logger.error('删除书签出错:', error);
         this.showError('Error deleting bookmark.');
     }
     }
@@ -373,7 +373,7 @@ SearchModal.prototype.deleteBookmark = async function(bookmarkId) {
     // 过滤标签页
 
 SearchModal.prototype.enterBookmarkFolderView = async function(folderPath) {
-    console.log('进入书签目录视图:', folderPath);
+    Logger.info('进入书签目录视图:', folderPath);
 
     // 保存当前的搜索结果和查询
     this.previousSearchResults = [...this.results];
@@ -404,7 +404,7 @@ SearchModal.prototype.enterBookmarkFolderView = async function(folderPath) {
     // 显示文件夹状态指示器
     this.showFolderFilterState(folderPath);
 
-    console.log(`显示文件夹 "${folderPath}" 下的 ${folderBookmarks.length} 个书签`);
+    Logger.info(`显示文件夹 "${folderPath}" 下的 ${folderBookmarks.length} 个书签`);
     }
 
     // 格式化日期

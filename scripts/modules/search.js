@@ -56,11 +56,64 @@ SearchModal.prototype.showSearchHistory = function() {
     });
 };
 
+// Show recently closed tabs
+SearchModal.prototype.showRecentlyClosed = function() {
+    this.sendMessageToBackground({ action: 'getRecentlyClosed' }).then(response => {
+        if (!response.success || !response.sessions || response.sessions.length === 0) return;
+        const resultsContainer = this.modal.querySelector('#resultsContainer');
+        const section = document.createElement('div');
+        section.className = 'recently-closed-section';
+        section.innerHTML = `
+            <div class="result-section-header"><span>🕐 Recently Closed</span><span class="section-count">${response.sessions.length}</span></div>
+            ${response.sessions.map(s => `
+                <div class="result-item history-type" data-url="${this.escapeHtml(s.url || '')}" data-session="${this.escapeHtml(JSON.stringify({tabId: s.id, windowId: s.windowId}))}">
+                    <div class="result-header">
+                        <div class="result-header-left">
+                            <span class="result-type">Closed</span>
+                            <span class="result-title">${this.escapeHtml(s.title || 'Untitled')}</span>
+                        </div>
+                    </div>
+                    <div class="result-url">${this.truncateUrl(s.url || '', 60)}</div>
+                </div>
+            `).join('')}
+        `;
+        resultsContainer.appendChild(section);
+        section.querySelectorAll('.result-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const url = item.dataset.url;
+                if (!url) return;
+                try {
+                    const session = JSON.parse(item.dataset.session);
+                    if (session.tabId) {
+                        chrome.sessions.restore(session.tabId).catch(() => {
+                            chrome.tabs.create({ url });
+                        });
+                    } else {
+                        chrome.tabs.create({ url });
+                    }
+                } catch {
+                    chrome.tabs.create({ url });
+                }
+                this.close();
+            });
+        });
+    }).catch(() => {});
+};
+
+// Append recently closed after search history
+const _origShowSearchHistory = SearchModal.prototype.showSearchHistory;
+SearchModal.prototype.showSearchHistory = function() {
+    const orig = _origShowSearchHistory.bind(this);
+    orig();
+    // Show recently closed after a short delay to ensure DOM is ready
+    setTimeout(() => this.showRecentlyClosed(), 50);
+};
+
 SearchModal.prototype.searchBookmarksAndHistory = async function(query) {
     if (!query.trim()) {
         // 空查询时，根据当前过滤器状态显示相应内容
         if (this.activeFilter === 'history') {
-            console.log('历史记录模式下空查询，显示最近20条历史记录');
+            Logger.info('历史记录模式下空查询，显示最近20条历史记录');
             this.loadRecentHistory();
         } else {
             this.showWelcomeMessage();
@@ -114,11 +167,11 @@ SearchModal.prototype.searchBookmarksAndHistory = async function(query) {
 
             // 注意：AI推荐现在只在手动触发时调用
         } else {
-            console.error('搜索失败:', response.error);
+            Logger.error('搜索失败:', response.error);
             this.showError('Search failed. Please try again.');
         }
     } catch (error) {
-        console.error('搜索出错:', error);
+        Logger.error('搜索出错:', error);
         this.showError('Search failed. Please try again.');
     }
     }
@@ -126,7 +179,7 @@ SearchModal.prototype.searchBookmarksAndHistory = async function(query) {
     // 发送消息到background script
 
 SearchModal.prototype.sendMessageToBackground = async function(message, retryCount = 0) {
-    console.log('📤 发送消息到background script:', message);
+    Logger.info('📤 发送消息到background script:', message);
 
     return new Promise((resolve, reject) => {
         // 检查是否已被取消
@@ -143,15 +196,15 @@ SearchModal.prototype.sendMessageToBackground = async function(message, retryCou
         }
 
         chrome.runtime.sendMessage(message, (response) => {
-            console.log('📨 收到background script响应:', response);
+            Logger.info('📨 收到background script响应:', response);
 
             if (chrome.runtime.lastError) {
-                console.error('❌ 消息传递错误:', chrome.runtime.lastError);
-                console.error('❌ 错误详情:', chrome.runtime.lastError.message);
+                Logger.error('❌ 消息传递错误:', chrome.runtime.lastError);
+                Logger.error('❌ 错误详情:', chrome.runtime.lastError.message);
 
                 // 如果是连接错误且重试次数小于3，则重试
                 if (chrome.runtime.lastError.message.includes('Could not establish connection') && retryCount < 3) {
-                    console.log(`🔄 连接失败，正在重试 (${retryCount + 1}/3)...`);
+                    Logger.info(`🔄 连接失败，正在重试 (${retryCount + 1}/3)...`);
                     setTimeout(() => {
                         this.sendMessageToBackground(message, retryCount + 1)
                             .then(resolve)
@@ -162,7 +215,7 @@ SearchModal.prototype.sendMessageToBackground = async function(message, retryCou
 
                 reject(new Error(chrome.runtime.lastError.message));
             } else {
-                console.log('start handle resolve 1596:', response);
+                Logger.info('start handle resolve 1596:', response);
                 resolve(response);
             }
         });
@@ -173,7 +226,7 @@ SearchModal.prototype.sendMessageToBackground = async function(message, retryCou
 
 SearchModal.prototype.loadRecentHistory = async function() {
     try {
-        console.log('开始加载最近的历史记录');
+        Logger.info('开始加载最近的历史记录');
         this.showLoading();
 
         // 通过消息传递请求background script获取最近的历史记录
@@ -183,14 +236,14 @@ SearchModal.prototype.loadRecentHistory = async function() {
         });
 
         if (response.success) {
-            console.log('获取历史记录成功:', response.results);
+            Logger.info('获取历史记录成功:', response.results);
             this.displayResults(response.results);
         } else {
-            console.error('获取历史记录失败:', response.error);
+            Logger.error('获取历史记录失败:', response.error);
             this.showError('Failed to load history. Please try again.');
         }
     } catch (error) {
-        console.error('加载历史记录出错:', error);
+        Logger.error('加载历史记录出错:', error);
         this.showError('Error loading history.');
     }
     }
@@ -250,10 +303,10 @@ SearchModal.prototype.handleInputChange = function(query) {
     // 显示过滤器下拉列表
 
 SearchModal.prototype.filterTabs = function(query) {
-    console.log('过滤标签页，查询:', query);
+    Logger.info('过滤标签页，查询:', query);
 
     if (!this.allTabs) {
-        console.log('没有标签页数据，重新加载');
+        Logger.info('没有标签页数据，重新加载');
         this.loadAllTabs();
         return;
     }
@@ -283,7 +336,7 @@ SearchModal.prototype.filterTabs = function(query) {
     // 切换到指定标签页
 
 SearchModal.prototype.searchInFolder = function(query) {
-    console.log(`在分组 "${this.currentSelectedFolder}" 内搜索:`, query);
+    Logger.info(`在分组 "${this.currentSelectedFolder}" 内搜索:`, query);
 
     // 获取该分组下的所有书签
     const folderBookmarks = this.allBookmarks.filter(bookmark =>
@@ -299,7 +352,7 @@ SearchModal.prototype.searchInFolder = function(query) {
         return title.includes(searchTerm) || url.includes(searchTerm);
     });
 
-    console.log(`在分组内找到 ${searchResults.length} 个匹配的书签`);
+    Logger.info(`在分组内找到 ${searchResults.length} 个匹配的书签`);
 
     // 显示搜索结果
     this.displayBookmarkResults(searchResults);
@@ -331,11 +384,11 @@ SearchModal.prototype.loadHistoryStats = async function() {
         if (response.success) {
             this.displayHistoryStats(response.stats);
         } else {
-            console.error('获取历史统计失败:', response.error);
+            Logger.error('获取历史统计失败:', response.error);
             this.showStatsError('Failed to load stats. Please try again.');
         }
     } catch (error) {
-        console.error('历史统计请求出错:', error);
+        Logger.error('历史统计请求出错:', error);
         this.showStatsError('Error loading stats.');
     }
     }
