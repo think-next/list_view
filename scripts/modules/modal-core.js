@@ -12,6 +12,24 @@ SearchModal.prototype.bindEvents = function() {
         }
     });
 
+    // 皮肤切换按钮
+    const skinToggle = this.modal.querySelector('#skinToggle');
+    if (skinToggle) {
+        skinToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const container = this.modal.querySelector('.modal-container');
+            const currentSkin = container.getAttribute('data-skin') || 'default';
+            const newSkin = currentSkin === 'compact' ? 'default' : 'compact';
+            if (newSkin === 'default') {
+                container.removeAttribute('data-skin');
+            } else {
+                container.setAttribute('data-skin', newSkin);
+            }
+            skinToggle.textContent = newSkin === 'compact' ? '⊞' : '⊡';
+            chrome.storage.local.set({ skin: newSkin });
+        });
+    }
+
     // 键盘事件处理
     document.addEventListener('keydown', (e) => {
         if (!this.isOpen) return;
@@ -127,22 +145,33 @@ SearchModal.prototype.bindSearchEvents = function() {
 SearchModal.prototype.show = function() {
     if (this.isOpen) return;
 
-    // Apply theme
-    chrome.storage.local.get(['theme'], (result) => {
+    // Apply theme & skin
+    chrome.storage.local.get(['theme', 'skin'], (result) => {
         const theme = result.theme || 'auto';
+        const skin = result.skin || 'default';
         const container = this.modal.querySelector('.modal-container');
         if (container) {
+            // Theme
             if (theme === 'dark') {
                 container.setAttribute('data-theme', 'dark');
             } else if (theme === 'light') {
                 container.removeAttribute('data-theme');
             } else {
-                // auto: follow system
                 if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
                     container.setAttribute('data-theme', 'dark');
                 } else {
                     container.removeAttribute('data-theme');
                 }
+            }
+            // Skin
+            if (skin === 'compact') {
+                container.setAttribute('data-skin', 'compact');
+            } else {
+                container.removeAttribute('data-skin');
+            }
+            const skinToggle = this.modal.querySelector('#skinToggle');
+            if (skinToggle) {
+                skinToggle.textContent = skin === 'compact' ? '⊞' : '⊡';
             }
         }
     });

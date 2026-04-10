@@ -71,6 +71,7 @@
                                     <div id="filterDropdown" class="filter-dropdown" style="display: none;"></div>
                                 </div>
                                 <button id="searchBtn">Search</button>
+                            <button id="skinToggle" class="skin-toggle-btn" title="切换展示风格">⊞</button>
                             </div>
                         </div>
                         

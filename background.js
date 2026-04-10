@@ -1,4 +1,14 @@
-// 测试Chrome API是否可用
+// Service Worker: inline Logger since importScripts doesn't work here
+const _LV = (typeof Logger === 'undefined');
+if (_LV) {
+  const _isDev = !('update_url' in chrome.runtime.getManifest());
+  self.Logger = {
+    info: _isDev ? console.log.bind(console) : () => {},
+    warn: _isDev ? console.warn.bind(console) : () => {},
+    error: console.error.bind(console),
+    debug: _isDev ? console.log.bind(console) : () => {}
+  };
+}
 Logger.info('Background script loaded');
 
 // 注入content script并显示模态框
