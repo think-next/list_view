@@ -130,11 +130,11 @@ async function handleShortcutTrigger() {
 // 消息路由表：action → handler
 const messageHandlers = {
     contentScriptReady: (req, sender, sendResponse) => {
-        sendResponse({ success: true });
+        return { success: true };
     },
     openOptionsPage: (req, sender, sendResponse) => {
         chrome.runtime.openOptionsPage();
-        sendResponse({ success: true });
+        return { success: true };
     },
     getRecentlyClosed: async () => {
         const sessions = await chrome.sessions.getRecentlyClosed({ maxResults: 10 });
@@ -159,7 +159,7 @@ const messageHandlers = {
             const names = result.windowNames || {};
             names[req.windowId] = req.name;
             chrome.storage.local.set({ windowNames: names });
-            sendResponse({ success: true });
+            return { success: true };
         });
         return true;
     },
@@ -168,7 +168,7 @@ const messageHandlers = {
             const names = result.windowNames || {};
             delete names[req.windowId];
             chrome.storage.local.set({ windowNames: names });
-            sendResponse({ success: true });
+            return { success: true };
         });
         return true;
     },
@@ -181,7 +181,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const handler = messageHandlers[request.action];
     if (!handler) {
         Logger.warn('收到未知消息类型:', request.action);
-        sendResponse({ success: false, error: '未知的消息类型' });
+        return { success: false, error: '未知的消息类型' };
         return;
     }
     try {
@@ -191,20 +191,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 .then(data => sendResponse(data || { success: true }))
                 .catch(error => {
                     Logger.error(`${request.action} 失败:`, error);
-                    sendResponse({ success: false, error: error.message });
+                    return { success: false, error: error.message };
                 });
             return true;
         }
     } catch (error) {
         Logger.error(`${request.action} 异常:`, error);
-        sendResponse({ success: false, error: error.message });
+        return { success: false, error: error.message };
     }
 });
 
 // === 以下为 handler 实现，保持原有函数签名 ===
 
 // 处理搜索请求
-async function handleSearchRequest(query, filter, sendResponse) {
+async function handleSearchRequest(query, filter) {
     try {
 
         let results = [];
@@ -218,11 +218,11 @@ async function handleSearchRequest(query, filter, sendResponse) {
         } else if (filter === 'tab') {
             // 搜索当前标签页（按窗口分组）
             const windowGroups = await searchTabs(query);
-            sendResponse({
+            return {
                 success: true,
                 results: windowGroups,
                 isGrouped: true // 标记这是分组数据
-            });
+            };
             return;
         } else {
             // 默认：并行搜索 Tabs、书签 和 历史记录
@@ -254,12 +254,12 @@ async function handleSearchRequest(query, filter, sendResponse) {
             results = merged;
 
             // 返回结果（按需求不使用全局上限，严格每来源上限12）
-            sendResponse({
+            return {
                 success: true,
                 results: results,
                 perSourceLimit: 12,
                 order: ['tab', 'bookmark', 'history']
-            });
+            };
             return;
         }
 
@@ -286,27 +286,27 @@ async function handleSearchRequest(query, filter, sendResponse) {
             const maxResults = result.maxResults || 12;
 
             // 返回配置数量的结果
-            sendResponse({
+            return {
                 success: true,
                 results: uniqueResults.slice(0, maxResults),
                 maxResults: maxResults
-            });
+            };
         } catch (error) {
             Logger.error('获取存储配置失败:', error);
             // 使用默认值
-            sendResponse({
+            return {
                 success: true,
                 results: uniqueResults.slice(0, 12),
                 maxResults: 12
-            });
+            };
         }
 
     } catch (error) {
         Logger.error('搜索出错:', error);
-        sendResponse({
+        return {
             success: false,
             error: error.message
-        });
+        };
     }
 }
 
@@ -626,17 +626,17 @@ async function groupTabsByWindow(tabs, query) {
 }
 
 // 处理切换标签页请求
-async function handleSwitchToTabRequest(tabId, windowId, sendResponse) {
+async function handleSwitchToTabRequest(tabId, windowId) {
     try {
 
         // 先切换到对应窗口
         chrome.windows.update(windowId, { focused: true }, () => {
             if (chrome.runtime.lastError) {
                 Logger.error('切换窗口失败:', chrome.runtime.lastError);
-                sendResponse({
+                return {
                     success: false,
                     error: chrome.runtime.lastError.message
-                });
+                };
                 return;
             }
 
@@ -644,81 +644,73 @@ async function handleSwitchToTabRequest(tabId, windowId, sendResponse) {
             chrome.tabs.update(tabId, { active: true }, () => {
                 if (chrome.runtime.lastError) {
                     Logger.error('切换标签页失败:', chrome.runtime.lastError);
-                    sendResponse({
+                    return {
                         success: false,
                         error: chrome.runtime.lastError.message
-                    });
+                    };
                     return;
                 }
 
-                sendResponse({
+                return {
                     success: true,
                     message: '标签页切换成功'
-                });
+                };
             });
         });
     } catch (error) {
         Logger.error('切换标签页出错:', error);
-        sendResponse({
+        return {
             success: false,
             error: error.message
-        });
+        };
     }
 }
 
 // 处理获取所有标签页请求
-async function handleGetAllTabsRequest(sendResponse) {
+async function handleGetAllTabsRequest() {
     try {
-
         // 获取所有标签页并按窗口分组
         const windowGroups = await searchTabs('');
-
-        sendResponse({
-            success: true,
-            results: windowGroups
-        });
+        return { success: true, results: windowGroups };
     } catch (error) {
         Logger.error('获取所有标签页失败:', error);
-        sendResponse({
-            success: false,
-            error: error.message
-        });
+        return { success: false, error: error.message };
     }
 }
 
 // 处理关闭标签页请求
-async function handleCloseTabRequest(tabId, sendResponse) {
+async function handleCloseTabRequest(tabId) {
     try {
 
         chrome.tabs.remove(tabId, () => {
             if (chrome.runtime.lastError) {
                 Logger.error('关闭标签页失败:', chrome.runtime.lastError);
-                sendResponse({
+                return {
                     success: false,
                     error: chrome.runtime.lastError.message
-                });
+                };
                 return;
             }
 
-            sendResponse({
+            return {
                 success: true,
                 message: '标签页已关闭'
-            });
+            };
         });
     } catch (error) {
         Logger.error('关闭标签页出错:', error);
-        sendResponse({
+        return {
             success: false,
             error: error.message
-        });
+        };
     }
 }
 
 // 处理同窗口内重排tabs请求
-async function handleReorderTabsInWindowRequest(windowId, tabIds, sendResponse) {
+async function handleReorderTabsInWindowRequest(windowId, tabIds) {
     try {
         if (!Array.isArray(tabIds) || tabIds.length === 0) {
-            sendResponse({ success: false, error: 'No tabIds provided' });
+            return { success: false, error: 'No tabIds provided' };
             return;
         }
 
@@ -734,7 +726,7 @@ async function handleReorderTabsInWindowRequest(windowId, tabIds, sendResponse) 
         const filteredTabIds = tabIds.filter(id => existingTabIds.has(id));
 
         if (filteredTabIds.length === 0) {
-            sendResponse({ success: false, error: 'No matching tabs found in target window' });
+            return { success: false, error: 'No matching tabs found in target window' };
             return;
         }
 
@@ -747,15 +739,15 @@ async function handleReorderTabsInWindowRequest(windowId, tabIds, sendResponse) 
             });
         });
 
-        sendResponse({ success: true });
+        return { success: true };
     } catch (error) {
         Logger.error('handleReorderTabsInWindowRequest error:', error);
-        sendResponse({ success: false, error: error.message });
+        return { success: false, error: error.message };
     }
 }
 
 // 处理历史统计请求
-async function handleHistoryStatsRequest(sendResponse) {
+async function handleHistoryStatsRequest() {
     try {
 
         // 获取过去7天的历史记录
@@ -770,10 +762,10 @@ async function handleHistoryStatsRequest(sendResponse) {
         }, (results) => {
             if (chrome.runtime.lastError) {
                 Logger.error('获取历史记录失败:', chrome.runtime.lastError);
-                sendResponse({
+                return {
                     success: false,
                     error: chrome.runtime.lastError.message
-                });
+                };
                 return;
             }
 
@@ -784,24 +776,24 @@ async function handleHistoryStatsRequest(sendResponse) {
                 // 获取前3个域名，每个域名下前3个路径
                 const topDomains = getTopDomainsWithPaths(domainStats, 3, 3);
 
-                sendResponse({
+                return {
                     success: true,
                     stats: topDomains
-                });
+                };
             } catch (error) {
                 Logger.error('处理历史统计失败:', error);
-                sendResponse({
+                return {
                     success: false,
                     error: error.message
-                });
+                };
             }
         });
     } catch (error) {
         Logger.error('历史统计请求失败:', error);
-        sendResponse({
+        return {
             success: false,
             error: error.message
-        });
+        };
     }
 }
 
@@ -906,7 +898,7 @@ function getTopDomainsWithPaths(domainMap, topDomainsCount, topPathsCount) {
 }
 
 // 处理获取maxResults配置请求
-async function handleGetMaxResultsRequest(sendResponse) {
+async function handleGetMaxResultsRequest() {
     try {
         const result = await new Promise((resolve, reject) => {
             chrome.storage.local.get(['maxResults'], (result) => {
@@ -919,20 +911,20 @@ async function handleGetMaxResultsRequest(sendResponse) {
         });
 
         const maxResults = result.maxResults || 12;
-        sendResponse({
+        return {
             success: true,
             maxResults: maxResults
-        });
+        };
     } catch (error) {
         Logger.error('获取maxResults配置失败:', error);
-        sendResponse({
+        return {
             success: true,
             maxResults: 12
-        });
+        };
     }
 }
 // 处理AI设置检查请求
-async function handleCheckAISettingsRequest(sendResponse) {
+async function handleCheckAISettingsRequest() {
     try {
         // 获取AI推荐设置
         const settings = await new Promise((resolve, reject) => {
@@ -968,7 +960,7 @@ async function handleCheckAISettingsRequest(sendResponse) {
             permissionError = error.message;
         }
 
-        sendResponse({
+        return {
             success: true,
             enabled: aiRecommendationEnabled,
             permission: permissionGranted,
@@ -976,19 +968,19 @@ async function handleCheckAISettingsRequest(sendResponse) {
             settings: {
                 aiRecommendation: settings.aiRecommendation
             }
-        });
+        };
 
     } catch (error) {
         Logger.error('检查AI设置失败:', error);
-        sendResponse({
+        return {
             success: false,
             error: error.message
-        });
+        };
     }
 }
 
 // 处理AI推荐请求
-async function handleAIRecommendationRequest(query, sendResponse) {
+async function handleAIRecommendationRequest(query) {
     try {
         const settings = await new Promise((resolve, reject) => {
             chrome.storage.local.get(['aiRecommendation', 'aiTimeout'], (result) => {
@@ -1007,7 +999,7 @@ async function handleAIRecommendationRequest(query, sendResponse) {
         const aiTimeout = settings.aiTimeout || 30000;
 
         if (!aiRecommendationEnabled) {
-            sendResponse({ success: false, error: 'AI推荐未启用' });
+            return { success: false, error: 'AI推荐未启用' };
             return;
         }
 
@@ -1019,10 +1011,10 @@ async function handleAIRecommendationRequest(query, sendResponse) {
             }
         } catch (error) {
             Logger.error('AI权限检查失败:', error);
-            sendResponse({
+            return {
                 success: false,
                 error: 'AI权限未授权，请在扩展设置中授权AI权限'
-            });
+            };
             return;
         }
 
@@ -1068,7 +1060,7 @@ async function handleAIRecommendationRequest(query, sendResponse) {
         ];
 
         if (typeof LanguageModel === 'undefined') {
-            sendResponse({
+            return {
                 success: true,
                 recommendations: [
                     {
@@ -1082,7 +1074,7 @@ async function handleAIRecommendationRequest(query, sendResponse) {
                         reason: "备选搜索推荐"
                     }
                 ]
-            });
+            };
             return;
         }
 
@@ -1093,10 +1085,10 @@ async function handleAIRecommendationRequest(query, sendResponse) {
             });
         } catch (createError) {
             Logger.error('AI会话创建失败:', createError);
-            sendResponse({
+            return {
                 success: false,
                 error: `AI会话创建失败: ${createError.message}`
-            });
+            };
             return;
         }
 
@@ -1144,10 +1136,10 @@ ${JSON.stringify(limitedContextData, null, 2)}
             ]);
         } catch (promptError) {
             Logger.error('AI调用失败:', promptError);
-            sendResponse({
+            return {
                 success: false,
                 error: `${promptError.message}`
-            });
+            };
             return;
         }
 
@@ -1181,31 +1173,31 @@ ${JSON.stringify(limitedContextData, null, 2)}
             }
         }
 
-        sendResponse({
+        return {
             success: true,
             recommendations: recommendations.slice(0, 3)
-        });
+        };
 
     } catch (error) {
         Logger.error('AI推荐失败:', error);
-        sendResponse({
+        return {
             success: false,
             error: error.message
-        });
+        };
     }
 }
 
 // 处理AI模型下载请求
-async function handleDownloadAIModelRequest(sendResponse) {
+async function handleDownloadAIModelRequest() {
     try {
         const availability = await LanguageModel.availability();
 
         if (availability === 'available') {
-            sendResponse({
+            return {
                 success: true,
                 message: '模型已可用',
                 availability: availability
-            });
+            };
             return;
         }
 
@@ -1231,30 +1223,30 @@ async function handleDownloadAIModelRequest(sendResponse) {
                     }
                 });
 
-                sendResponse({
+                return {
                     success: true,
                     message: '正在监听下载进度',
                     isDownloading: true,
                     availability: availability
-                });
+                };
                 return;
             } catch (error) {
                 Logger.error('设置下载进度监听器失败:', error);
-                sendResponse({
+                return {
                     success: false,
                     error: `监听下载进度失败: ${error.message}`,
                     availability: availability
-                });
+                };
                 return;
             }
         }
 
         if (availability !== 'downloadable') {
-            sendResponse({
+            return {
                 success: false,
                 error: `模型状态不支持下载: ${availability}`,
                 availability: availability
-            });
+            };
             return;
         }
 
@@ -1281,25 +1273,25 @@ async function handleDownloadAIModelRequest(sendResponse) {
         // 重新检查模型状态
         const newAvailability = await LanguageModel.availability();
 
-        sendResponse({
+        return {
             success: true,
             message: '模型下载已开始',
             availability: newAvailability,
             sessionCreated: true
-        });
+        };
 
     } catch (error) {
         Logger.error('AI模型下载失败:', error);
-        sendResponse({
+        return {
             success: false,
             error: `模型下载失败: ${error.message}`,
             errorDetails: error
-        });
+        };
     }
 }
 
 // 处理获取所有书签请求
-async function handleGetAllBookmarksRequest(sendResponse) {
+async function handleGetAllBookmarksRequest() {
     try {
 
         const bookmarks = await chrome.bookmarks.getTree();
@@ -1337,39 +1329,39 @@ async function handleGetAllBookmarksRequest(sendResponse) {
 
         flattenBookmarks(bookmarks);
 
-        sendResponse({
+        return {
             success: true,
             results: flatBookmarks
-        });
+        };
     } catch (error) {
         Logger.error('获取书签失败:', error);
-        sendResponse({
+        return {
             success: false,
             error: error.message
-        });
+        };
     }
 }
 
 // 处理删除书签请求
-async function handleDeleteBookmarkRequest(bookmarkId, sendResponse) {
+async function handleDeleteBookmarkRequest(bookmarkId) {
     try {
         await chrome.bookmarks.remove(bookmarkId);
 
-        sendResponse({
+        return {
             success: true,
             message: '书签删除成功'
-        });
+        };
     } catch (error) {
         Logger.error('删除书签失败:', error);
-        sendResponse({
+        return {
             success: false,
             error: error.message
-        });
+        };
     }
 }
 
 // 处理窗口合并请求
-async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendResponse) {
+async function handleMergeWindowsRequest(sourceWindowId, targetWindowId) {
     try {
         // 参数验证
         if (!sourceWindowId || !targetWindowId) {
@@ -1445,12 +1437,12 @@ async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendRes
         const remainingTabs = await chrome.tabs.query({ windowId: sourceWindowId });
         const targetTabs = await chrome.tabs.query({ windowId: targetWindowId });
 
-        sendResponse({
+        return {
             success: true,
             message: `成功将 ${sourceTabs.length} 个标签页合并到目标窗口`,
             mergedTabsCount: sourceTabs.length,
             targetWindowTabsCount: targetTabs.length
-        });
+        };
 
     } catch (error) {
         Logger.error('窗口合并失败:', error);
@@ -1468,27 +1460,27 @@ async function handleMergeWindowsRequest(sourceWindowId, targetWindowId, sendRes
             errorMessage = '无法修改标签页，可能受到浏览器限制';
         }
 
-        sendResponse({
+        return {
             success: false,
             error: errorMessage,
             errorDetails: error.message
-        });
+        };
     }
 }
 
 // 处理创建标签页请求
-async function handleCreateTabRequest(url, sendResponse) {
+async function handleCreateTabRequest(url) {
     try {
         const tab = await chrome.tabs.create({ url: url });
-        sendResponse({ success: true, tabId: tab.id });
+        return { success: true, tabId: tab.id };
     } catch (error) {
         Logger.error('创建标签页失败:', error);
-        sendResponse({ success: false, error: error.message });
+        return { success: false, error: error.message };
     }
 }
 
 // 处理获取最近历史记录请求
-async function handleGetRecentHistoryRequest(limit, sendResponse) {
+async function handleGetRecentHistoryRequest(limit) {
     try {
 
         const endTime = Date.now();
@@ -1502,7 +1494,7 @@ async function handleGetRecentHistoryRequest(limit, sendResponse) {
         }, (historyItems) => {
             if (chrome.runtime.lastError) {
                 Logger.error('历史记录搜索错误:', chrome.runtime.lastError);
-                sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                return { success: false, error: chrome.runtime.lastError.message };
                 return;
             }
 
@@ -1536,29 +1528,29 @@ async function handleGetRecentHistoryRequest(limit, sendResponse) {
                 }
             }
 
-            sendResponse({
+            return {
                 success: true,
                 results: uniqueHistoryItems
-            });
+            };
         });
     } catch (error) {
         Logger.error('获取最近历史记录失败:', error);
-        sendResponse({ success: false, error: error.message });
+        return { success: false, error: error.message };
     }
 }
 
 // 处理获取窗口名称请求
-async function handleGetWindowNamesRequest(sendResponse) {
+async function handleGetWindowNamesRequest() {
     try {
         chrome.storage.local.get(['windowNames'], (result) => {
-            sendResponse({
+            return {
                 success: true,
                 windowNames: result.windowNames || {}
-            });
+            };
         });
     } catch (error) {
         Logger.error('获取窗口名称失败:', error);
-        sendResponse({ success: false, error: error.message });
+        return { success: false, error: error.message };
     }
 }
 
