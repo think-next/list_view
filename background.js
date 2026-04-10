@@ -154,23 +154,19 @@ const messageHandlers = {
     deleteBookmark: async (req) => handleDeleteBookmarkRequest(req.bookmarkId),
     createTab: async (req) => handleCreateTabRequest(req.url),
     getRecentHistory: async (req) => handleGetRecentHistoryRequest(req.limit),
-    saveWindowName: (req, sender, sendResponse) => {
-        chrome.storage.local.get(['windowNames'], (result) => {
-            const names = result.windowNames || {};
-            names[req.windowId] = req.name;
-            chrome.storage.local.set({ windowNames: names });
-            return { success: true };
-        });
-        return true;
+    saveWindowName: async (req) => {
+        const result = await chrome.storage.local.get(['windowNames']);
+        const names = result.windowNames || {};
+        names[req.windowId] = req.name;
+        await chrome.storage.local.set({ windowNames: names });
+        return { success: true };
     },
-    deleteWindowName: (req, sender, sendResponse) => {
-        chrome.storage.local.get(['windowNames'], (result) => {
-            const names = result.windowNames || {};
-            delete names[req.windowId];
-            chrome.storage.local.set({ windowNames: names });
-            return { success: true };
-        });
-        return true;
+    deleteWindowName: async (req) => {
+        const result = await chrome.storage.local.get(['windowNames']);
+        const names = result.windowNames || {};
+        delete names[req.windowId];
+        await chrome.storage.local.set({ windowNames: names });
+        return { success: true };
     },
     getWindowNames: async () => handleGetWindowNamesRequest(),
     reorderTabsInWindow: async (req) => handleReorderTabsInWindowRequest(req.windowId, req.tabIds)
@@ -181,7 +177,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const handler = messageHandlers[request.action];
     if (!handler) {
         Logger.warn('收到未知消息类型:', request.action);
-        return { success: false, error: '未知的消息类型' };
+        sendResponse({ success: false, error: '未知的消息类型' });
         return;
     }
     try {
@@ -191,13 +187,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 .then(data => sendResponse(data || { success: true }))
                 .catch(error => {
                     Logger.error(`${request.action} 失败:`, error);
-                    return { success: false, error: error.message };
+                    sendResponse({ success: false, error: error.message });
                 });
             return true;
+        } else if (result !== undefined) {
+            sendResponse(result);
         }
     } catch (error) {
         Logger.error(`${request.action} 异常:`, error);
-        return { success: false, error: error.message };
+        sendResponse({ success: false, error: error.message });
     }
 });
 
