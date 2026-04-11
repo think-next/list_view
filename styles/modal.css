@@ -2046,6 +2046,9 @@
 .modal-container[data-theme="dark"] #searchInput::placeholder { color: #64748b; }
 .modal-container[data-theme="dark"] .result-item { background: #1e293b; border-color: #334155; color: #e2e8f0; }
 .modal-container[data-theme="dark"] .result-item:hover { background: #334155; border-color: #3b82f6; }
+.modal-container[data-theme="dark"] .result-item.selected { background: #1d4ed8; border-color: #3b82f6; }
+.modal-container[data-theme="dark"] .result-item.selected .result-title { color: #f1f5f9; }
+.modal-container[data-theme="dark"] .bookmark-item.selected { background: #1d4ed8; border-color: #3b82f6; }
 .modal-container[data-theme="dark"] .result-title { color: #e2e8f0; }
 .modal-container[data-theme="dark"] .result-url { color: #64748b; }
 .modal-container[data-theme="dark"] .result-date { color: #64748b; }
@@ -2255,6 +2258,17 @@
 /* Compact skin - dark overrides */
 .modal-container[data-theme="dark"][data-skin="compact"] .result-item:hover {
     background: #334155;
+}
+.modal-container[data-theme="dark"][data-skin="compact"] .result-item.selected {
+    background: #1d4ed8;
+    border-color: #3b82f6;
+}
+.modal-container[data-theme="dark"][data-skin="compact"] .tab-item:hover {
+    background: #334155;
+}
+.modal-container[data-theme="dark"][data-skin="compact"] .tab-item.active {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
 }
 .modal-container[data-skin="compact"] .result-item:hover {
     transform: none;
