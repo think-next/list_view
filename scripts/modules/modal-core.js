@@ -441,7 +441,7 @@ SearchModal.prototype.displayResults = function(results, query = '') {
                         <span class="result-date">${formattedDate}</span>
                     </div>
                 </div>
-                <div class="result-url">${this.highlightText(truncatedUrl, query)}</div>
+                <div class="result-url">${this.escapeHtml(truncatedUrl)}</div>
             </div>
         `;
     }).join('');
@@ -700,7 +700,7 @@ SearchModal.prototype.refreshSimpleResultsDisplay = function(query = '') {
                         <span class="result-date">${formattedDate}</span>
                     </div>
                 </div>
-                <div class="result-url">${this.highlightText(truncatedUrl, query)}</div>
+                <div class="result-url">${this.escapeHtml(truncatedUrl)}</div>
             </div>
         `;
     }).join('');
