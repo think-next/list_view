@@ -57,6 +57,7 @@ SearchModal.prototype.displayBookmarkResults = function(bookmarks) {
 
     // 保存书签结果
     this.results = [];
+    this.windowGroups = null; // 清除Tab分组状态
     this.selectedIndex = -1; // 重置选中状态
 
     // 将所有书签展平到results数组中，用于键盘导航

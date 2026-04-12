@@ -334,6 +334,7 @@ SearchModal.prototype.displayResults = function(results, query = '') {
 
     // 保存搜索结果
     this.results = results;
+    this.windowGroups = null; // 清除Tab分组状态，避免键盘导航走错分支
     this.selectedIndex = -1; // 重置选中状态
 
     // 保存AI推荐模块（如果存在）
