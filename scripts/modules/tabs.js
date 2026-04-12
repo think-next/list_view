@@ -604,6 +604,9 @@ SearchModal.prototype.switchToWindowGroup = function(groupIndex) {
             group.classList.add('window-hidden');
         }
     });
+    // 切换窗口时重置选中状态
+    this.updateSelectedItem(-1);
+    this.selectedIndex = -1;
     }
 
     // 更新窗口Tab选中状态

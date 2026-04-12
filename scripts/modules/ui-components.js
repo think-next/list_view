@@ -223,11 +223,38 @@ SearchModal.prototype.updateSelectedItem = function(index) {
     // 打开选中的结果
 
 SearchModal.prototype.openSelectedResult = function() {
+    // Tab分组视图：直接从可见DOM获取选中项
+    if (this.windowGroups && this.windowGroups.length > 0) {
+        const visibleItems = this.modal.querySelectorAll('.window-group:not(.window-hidden) .result-item.selected');
+        if (visibleItems.length > 0) {
+            const item = visibleItems[0];
+            const tabId = parseInt(item.dataset.tabId);
+            const windowId = parseInt(item.dataset.windowId);
+            this.switchToTab(tabId, windowId);
+        }
+        return;
+    }
+
+    // 书签模式
+    if (this.activeFilter === 'bookmark') {
+        const bookmarkItems = this.modal.querySelectorAll('.bookmark-item:not(.hidden)');
+        if (this.selectedIndex >= 0 && this.selectedIndex < bookmarkItems.length) {
+            const selectedItem = bookmarkItems[this.selectedIndex];
+            const url = selectedItem.dataset.url;
+            if (url) {
+                chrome.tabs.create({ url: url });
+                this.close();
+            }
+        }
+        return;
+    }
+
+    // 默认搜索模式
     const aiItems = this.modal.querySelectorAll('.ai-result-item');
     const aiItemsCount = aiItems.length;
 
-    // 在默认搜索模式下，优先处理AI推荐项
-    if (!this.activeFilter && aiItemsCount > 0 && this.selectedIndex < aiItemsCount) {
+    // 优先处理AI推荐项
+    if (aiItemsCount > 0 && this.selectedIndex < aiItemsCount) {
         const selectedAIItem = aiItems[this.selectedIndex];
         const url = selectedAIItem.dataset.url;
         if (url) {
@@ -239,30 +266,17 @@ SearchModal.prototype.openSelectedResult = function() {
 
     // 处理常规搜索结果项
     let adjustedIndex = this.selectedIndex;
-    if (!this.activeFilter && aiItemsCount > 0) {
+    if (aiItemsCount > 0) {
         adjustedIndex = this.selectedIndex - aiItemsCount;
     }
 
     if (adjustedIndex >= 0 && adjustedIndex < this.results.length) {
         const selectedResult = this.results[adjustedIndex];
         if (selectedResult.type === 'tab') {
-            // 标签页类型：切换到对应标签页
             this.switchToTab(selectedResult.tabId, selectedResult.windowId);
         } else {
-            // 书签和历史类型：打开新标签页
             window.open(selectedResult.url, '_blank');
             this.close();
-        }
-    } else if (this.activeFilter === 'bookmark') {
-        // 处理书签模式下的选中项
-        const bookmarkItems = this.modal.querySelectorAll('.bookmark-item');
-        if (this.selectedIndex >= 0 && this.selectedIndex < bookmarkItems.length) {
-            const selectedItem = bookmarkItems[this.selectedIndex];
-            const url = selectedItem.dataset.url;
-            if (url) {
-                chrome.tabs.create({ url: url });
-                this.close();
-            }
         }
     }
     }
