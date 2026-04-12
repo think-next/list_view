@@ -106,6 +106,9 @@ SearchModal.prototype.truncateUrl = function(url, maxLength = 300) {
     // 导航搜索结果
 
 SearchModal.prototype.navigateResults = function(direction) {
+    // [DEBUG] 临时调试
+    console.log('[navigateResults] direction:', direction, 'windowGroups:', !!this.windowGroups, 'results.length:', this.results?.length, 'activeFilter:', this.activeFilter);
+
     // Tab分组视图：只在当前可见窗口内导航
     if (this.windowGroups && this.windowGroups.length > 0) {
         const visibleItems = this.modal.querySelectorAll('.window-group:not(.window-hidden) .result-item');
@@ -166,6 +169,9 @@ SearchModal.prototype.navigateResults = function(direction) {
     // 更新选中项
 
 SearchModal.prototype.updateSelectedItem = function(index) {
+    // [DEBUG] 临时调试
+    console.log('[updateSelectedItem] index:', index, 'activeFilter:', this.activeFilter, 'windowGroups:', !!this.windowGroups);
+
     // Tab分组视图下不使用此函数（navigateResults 中直接处理）
     if (this.windowGroups && this.windowGroups.length > 0) return;
 
