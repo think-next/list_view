@@ -106,12 +106,39 @@ SearchModal.prototype.truncateUrl = function(url, maxLength = 300) {
     // 导航搜索结果
 
 SearchModal.prototype.navigateResults = function(direction) {
-    let totalItems = this.results.length;
+    // Tab分组视图：只在当前可见窗口内导航
+    if (this.windowGroups && this.windowGroups.length > 0) {
+        const visibleItems = this.modal.querySelectorAll('.window-group:not(.window-hidden) .result-item');
+        const totalVisible = visibleItems.length;
+        if (totalVisible === 0) return;
 
-    // 如果是书签模式，使用书签项的数量
+        this.updateSelectedItem(-1);
+
+        if (direction > 0) {
+            this.selectedIndex = (this.selectedIndex + 1) % totalVisible;
+        } else {
+            this.selectedIndex = this.selectedIndex <= 0 ? totalVisible - 1 : this.selectedIndex - 1;
+        }
+
+        // 只在可见元素上操作
+        visibleItems.forEach((item, i) => {
+            if (i === this.selectedIndex) {
+                item.classList.add('selected');
+                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+        return;
+    }
+
+    // 书签模式
+    let totalItems = 0;
     if (this.activeFilter === 'bookmark') {
-        const bookmarkItems = this.modal.querySelectorAll('.bookmark-item');
+        const bookmarkItems = this.modal.querySelectorAll('.bookmark-item:not(.hidden)');
         totalItems = bookmarkItems.length;
+    } else {
+        totalItems = this.results ? this.results.length : 0;
     }
 
     // 在默认搜索模式下，需要包含AI推荐项
@@ -127,10 +154,8 @@ SearchModal.prototype.navigateResults = function(direction) {
 
     // 计算新的选中索引
     if (direction > 0) {
-        // 向下或Tab键
         this.selectedIndex = (this.selectedIndex + 1) % totalItems;
     } else {
-        // 向上键
         this.selectedIndex = this.selectedIndex <= 0 ? totalItems - 1 : this.selectedIndex - 1;
     }
 
@@ -141,15 +166,30 @@ SearchModal.prototype.navigateResults = function(direction) {
     // 更新选中项
 
 SearchModal.prototype.updateSelectedItem = function(index) {
+    // Tab分组视图下不使用此函数（navigateResults 中直接处理）
+    if (this.windowGroups && this.windowGroups.length > 0) return;
+
+    // 书签模式：只处理 bookmark-item
+    if (this.activeFilter === 'bookmark') {
+        const bookmarkItems = this.modal.querySelectorAll('.bookmark-item:not(.hidden)');
+        bookmarkItems.forEach((item, i) => {
+            if (i === index) {
+                item.classList.add('selected');
+                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+        return;
+    }
+
     const resultItems = this.modal.querySelectorAll('.result-item:not(.ai-result-item)');
-    const bookmarkItems = this.modal.querySelectorAll('.bookmark-item');
     const aiItems = this.modal.querySelectorAll('.ai-result-item');
 
     // 在默认搜索模式下，AI推荐项优先显示
     if (!this.activeFilter && aiItems.length > 0) {
         const aiItemsCount = aiItems.length;
 
-        // 处理AI推荐项
         aiItems.forEach((item, i) => {
             if (i === index) {
                 item.classList.add('selected');
@@ -159,7 +199,6 @@ SearchModal.prototype.updateSelectedItem = function(index) {
             }
         });
 
-        // 处理常规搜索结果项（调整索引）
         resultItems.forEach((item, i) => {
             const adjustedIndex = i + aiItemsCount;
             if (adjustedIndex === index) {
@@ -170,7 +209,6 @@ SearchModal.prototype.updateSelectedItem = function(index) {
             }
         });
     } else {
-        // 其他模式下的正常处理
         resultItems.forEach((item, i) => {
             if (i === index) {
                 item.classList.add('selected');
@@ -180,16 +218,6 @@ SearchModal.prototype.updateSelectedItem = function(index) {
             }
         });
     }
-
-    // 处理书签项
-    bookmarkItems.forEach((item, i) => {
-        if (i === index) {
-            item.classList.add('selected');
-            item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        } else {
-            item.classList.remove('selected');
-        }
-    });
     }
 
     // 打开选中的结果
