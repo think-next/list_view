@@ -106,184 +106,70 @@ SearchModal.prototype.truncateUrl = function(url, maxLength = 300) {
     // 导航搜索结果
 
 SearchModal.prototype.navigateResults = function(direction) {
-    // [DEBUG] 临时调试
-    console.log('[navigateResults] direction:', direction, 'windowGroups:', !!this.windowGroups, 'results.length:', this.results?.length, 'activeFilter:', this.activeFilter);
-
-    // Tab分组视图：只在当前可见窗口内导航
+    // 收集当前所有可选中的条目（统一基于DOM）
+    let items;
     if (this.windowGroups && this.windowGroups.length > 0) {
-        const visibleItems = this.modal.querySelectorAll('.window-group:not(.window-hidden) .result-item');
-        const totalVisible = visibleItems.length;
-        if (totalVisible === 0) return;
-
-        this.updateSelectedItem(-1);
-
-        if (direction > 0) {
-            this.selectedIndex = (this.selectedIndex + 1) % totalVisible;
-        } else {
-            this.selectedIndex = this.selectedIndex <= 0 ? totalVisible - 1 : this.selectedIndex - 1;
-        }
-
-        // 只在可见元素上操作
-        visibleItems.forEach((item, i) => {
-            if (i === this.selectedIndex) {
-                item.classList.add('selected');
-                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            } else {
-                item.classList.remove('selected');
-            }
-        });
-        return;
-    }
-
-    // 书签模式
-    let totalItems = 0;
-    if (this.activeFilter === 'bookmark') {
-        const bookmarkItems = this.modal.querySelectorAll('.bookmark-item:not(.hidden)');
-        totalItems = bookmarkItems.length;
+        // Tab分组视图：只在当前可见窗口内
+        items = this.modal.querySelectorAll('.window-group:not(.window-hidden) .result-item');
+    } else if (this.activeFilter === 'bookmark') {
+        items = this.modal.querySelectorAll('.bookmark-item:not(.hidden)');
     } else {
-        totalItems = this.results ? this.results.length : 0;
+        // 默认搜索模式：AI推荐 + 普通结果，按DOM顺序
+        items = this.modal.querySelectorAll('.ai-result-item, .result-item:not(.ai-result-item)');
     }
 
-    // 在默认搜索模式下，需要包含AI推荐项
-    if (!this.activeFilter) {
-        const aiItems = this.modal.querySelectorAll('.ai-result-item');
-        totalItems += aiItems.length;
-    }
+    const total = items.length;
+    if (total === 0) return;
 
-    if (totalItems === 0) return;
+    // 清除之前所有选中态
+    this.modal.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
 
-    // 移除之前的选中状态
-    this.updateSelectedItem(-1);
-
-    // 计算新的选中索引
+    // 计算新索引
     if (direction > 0) {
-        this.selectedIndex = (this.selectedIndex + 1) % totalItems;
+        this.selectedIndex = (this.selectedIndex + 1) % total;
     } else {
-        this.selectedIndex = this.selectedIndex <= 0 ? totalItems - 1 : this.selectedIndex - 1;
+        this.selectedIndex = this.selectedIndex <= 0 ? total - 1 : this.selectedIndex - 1;
     }
 
-    // 更新选中状态
-    this.updateSelectedItem(this.selectedIndex);
+    // 选中
+    const target = items[this.selectedIndex];
+    if (target) {
+        target.classList.add('selected');
+        target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
     }
 
-    // 更新选中项
-
-SearchModal.prototype.updateSelectedItem = function(index) {
-    // [DEBUG] 临时调试
-    console.log('[updateSelectedItem] index:', index, 'activeFilter:', this.activeFilter, 'windowGroups:', !!this.windowGroups);
-
-    // Tab分组视图下不使用此函数（navigateResults 中直接处理）
-    if (this.windowGroups && this.windowGroups.length > 0) return;
-
-    // 书签模式：只处理 bookmark-item
-    if (this.activeFilter === 'bookmark') {
-        const bookmarkItems = this.modal.querySelectorAll('.bookmark-item:not(.hidden)');
-        bookmarkItems.forEach((item, i) => {
-            if (i === index) {
-                item.classList.add('selected');
-                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            } else {
-                item.classList.remove('selected');
-            }
-        });
-        return;
+    // 清除所有选中态（供外部调用）
+    SearchModal.prototype.clearSelection = function() {
+        this.selectedIndex = -1;
+        this.modal.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
     }
 
-    const resultItems = this.modal.querySelectorAll('.result-item:not(.ai-result-item)');
-    const aiItems = this.modal.querySelectorAll('.ai-result-item');
-
-    // 在默认搜索模式下，AI推荐项优先显示
-    if (!this.activeFilter && aiItems.length > 0) {
-        const aiItemsCount = aiItems.length;
-
-        aiItems.forEach((item, i) => {
-            if (i === index) {
-                item.classList.add('selected');
-                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            } else {
-                item.classList.remove('selected');
-            }
-        });
-
-        resultItems.forEach((item, i) => {
-            const adjustedIndex = i + aiItemsCount;
-            if (adjustedIndex === index) {
-                item.classList.add('selected');
-                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            } else {
-                item.classList.remove('selected');
-            }
-        });
-    } else {
-        resultItems.forEach((item, i) => {
-            if (i === index) {
-                item.classList.add('selected');
-                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            } else {
-                item.classList.remove('selected');
-            }
-        });
-    }
+    // updateSelectedItem 保留用于向后兼容，但内部统一使用 navigateResults
+    SearchModal.prototype.updateSelectedItem = function(index) {
+        if (index < 0) {
+            this.modal.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+        }
     }
 
     // 打开选中的结果
 
 SearchModal.prototype.openSelectedResult = function() {
-    // Tab分组视图：直接从可见DOM获取选中项
-    if (this.windowGroups && this.windowGroups.length > 0) {
-        const visibleItems = this.modal.querySelectorAll('.window-group:not(.window-hidden) .result-item.selected');
-        if (visibleItems.length > 0) {
-            const item = visibleItems[0];
-            const tabId = parseInt(item.dataset.tabId);
-            const windowId = parseInt(item.dataset.windowId);
-            this.switchToTab(tabId, windowId);
-        }
-        return;
-    }
+    // 统一基于DOM获取选中项
+    const selected = this.modal.querySelector('.result-item.selected, .bookmark-item.selected, .ai-result-item.selected');
+    if (!selected) return;
 
-    // 书签模式
-    if (this.activeFilter === 'bookmark') {
-        const bookmarkItems = this.modal.querySelectorAll('.bookmark-item:not(.hidden)');
-        if (this.selectedIndex >= 0 && this.selectedIndex < bookmarkItems.length) {
-            const selectedItem = bookmarkItems[this.selectedIndex];
-            const url = selectedItem.dataset.url;
-            if (url) {
-                chrome.tabs.create({ url: url });
-                this.close();
-            }
-        }
-        return;
-    }
+    const url = selected.dataset.url;
+    const tabId = selected.dataset.tabId ? parseInt(selected.dataset.tabId) : null;
+    const windowId = selected.dataset.windowId ? parseInt(selected.dataset.windowId) : null;
 
-    // 默认搜索模式
-    const aiItems = this.modal.querySelectorAll('.ai-result-item');
-    const aiItemsCount = aiItems.length;
-
-    // 优先处理AI推荐项
-    if (aiItemsCount > 0 && this.selectedIndex < aiItemsCount) {
-        const selectedAIItem = aiItems[this.selectedIndex];
-        const url = selectedAIItem.dataset.url;
-        if (url) {
-            window.open(url, '_blank');
-            this.close();
-        }
-        return;
-    }
-
-    // 处理常规搜索结果项
-    let adjustedIndex = this.selectedIndex;
-    if (aiItemsCount > 0) {
-        adjustedIndex = this.selectedIndex - aiItemsCount;
-    }
-
-    if (adjustedIndex >= 0 && adjustedIndex < this.results.length) {
-        const selectedResult = this.results[adjustedIndex];
-        if (selectedResult.type === 'tab') {
-            this.switchToTab(selectedResult.tabId, selectedResult.windowId);
-        } else {
-            window.open(selectedResult.url, '_blank');
-            this.close();
-        }
+    if (tabId && windowId) {
+        // Tab类型：切换到对应标签页
+        this.switchToTab(tabId, windowId);
+    } else if (url) {
+        // 书签、历史、AI推荐：打开新标签页
+        window.open(url, '_blank');
+        this.close();
     }
     }
 
