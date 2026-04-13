@@ -231,13 +231,18 @@ SearchModal.prototype.displayGroupedResults = function(windowGroups) {
     // 绑定窗口Tab导航事件
     this.bindWindowTabEvents();
 
-    // 初始化窗口索引，激活第一个窗口tab
-    this.activeWindowIndex = 0;
-    const firstWindowTab = this.modal.querySelector('.window-tab');
-    if (firstWindowTab) {
-        this.updateWindowTabSelection(firstWindowTab);
-        // 默认只显示第一个窗口
-        this.switchToWindowGroup(0);
+    // 初始化窗口索引，默认选中当前窗口
+    const currentWindowId = this._currentWindowId || null;
+    let defaultIndex = 0;
+    if (currentWindowId) {
+        const idx = windowGroups.findIndex(g => g.windowId === currentWindowId);
+        if (idx !== -1) defaultIndex = idx;
+    }
+    this.activeWindowIndex = defaultIndex;
+    const defaultWindowTab = this.modal.querySelector(`.window-tab[data-group-index="${defaultIndex}"]`);
+    if (defaultWindowTab) {
+        this.updateWindowTabSelection(defaultWindowTab);
+        this.switchToWindowGroup(defaultIndex);
     }
 
     // 添加窗口名称编辑事件
@@ -319,6 +324,13 @@ SearchModal.prototype.loadAllTabs = async function() {
         if (response.success) {
             Logger.info('获取标签页成功:', response.results);
             this.allTabs = response.results; // 保存所有标签页数据
+            // 获取当前窗口ID，用于默认选中
+            try {
+                const win = await chrome.windows.getCurrent();
+                this._currentWindowId = win.id;
+            } catch(e) {
+                this._currentWindowId = null;
+            }
             this.displayGroupedResults(response.results);
         } else {
             Logger.error('获取标签页失败:', response.error);
