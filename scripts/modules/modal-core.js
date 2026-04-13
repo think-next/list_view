@@ -69,6 +69,9 @@ SearchModal.prototype.bindEvents = function() {
                     }
                     this.switchToWindowGroup(this.activeWindowIndex);
                     this.updateWindowTabSelection(windowTabs[this.activeWindowIndex]);
+                    // 切换窗口后重置选中索引，避免up/down指向错误元素
+                    this.selectedIndex = -1;
+                    this.clearSelection();
                 }
                 return;
             }
