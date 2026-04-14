@@ -468,11 +468,15 @@
 
 /* 窗口分组样式 */
 .window-group {
-    margin-bottom: 16px;
     background: #f1f5f9;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     transition: opacity 0.15s ease;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .window-header {
@@ -482,9 +486,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 2;
+    flex-shrink: 0;
     border-radius: 12px 12px 0 0;
 }
 
@@ -676,6 +678,9 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .tab-item {
@@ -893,6 +898,19 @@
     flex: 1;
     overflow-y: auto;
     max-height: 400px;
+}
+
+/* Tab分组视图：禁用外层滚动，内部独立滚动 */
+.results-section:has(.window-group) {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.results-container:has(.window-group) {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .loading {
