@@ -233,6 +233,8 @@ SearchModal.prototype.displayGroupedResults = function(windowGroups) {
 
     // 初始化窗口索引，默认选中当前窗口
     const currentWindowId = this._currentWindowId || null;
+    Logger.info('[displayGroupedResults] _currentWindowId:', currentWindowId);
+    windowGroups.forEach((g, i) => Logger.info('[displayGroupedResults] group', i, 'windowId:', g.windowId));
     let defaultIndex = 0;
     if (currentWindowId) {
         const idx = windowGroups.findIndex(g => g.windowId === currentWindowId);
@@ -328,6 +330,7 @@ SearchModal.prototype.loadAllTabs = async function() {
             try {
                 const win = await chrome.windows.getCurrent();
                 this._currentWindowId = win.id;
+                Logger.info('[loadAllTabs] 设置 _currentWindowId:', this._currentWindowId);
             } catch(e) {
                 this._currentWindowId = null;
             }
