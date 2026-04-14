@@ -471,22 +471,12 @@
     margin-bottom: 20px;
     background: #f1f5f9;
     border-radius: 12px;
-    overflow: hidden;
     border: 1px solid #e2e8f0;
     transition: opacity 0.15s ease;
     display: flex;
     flex-direction: column;
     max-height: 50vh;
-}
-
-.window-group .tabs-list {
-    overflow-y: auto;
-    flex: 1;
-    min-height: 0;
-}
-
-.window-group.window-hidden {
-    display: none;
+    overflow: hidden;
 }
 
 .window-header {
@@ -497,9 +487,7 @@
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    z-index: 1;
+    border-radius: 12px 12px 0 0;
 }
 
 .window-title-container {
@@ -673,10 +661,16 @@
 
 .tab-count {
     font-size: 12px;
-    opacity: 0.9;
-    background: rgba(255, 255, 255, 0.2);
-    padding: 4px 8px;
+    font-weight: 600;
+    color: #3b82f6;
+    background: rgba(255, 255, 255, 0.6);
+    padding: 3px 10px;
     border-radius: 12px;
+    letter-spacing: 0.02em;
+}
+
+.window-group.window-hidden {
+    display: none;
 }
 
 .tabs-list {
@@ -684,6 +678,9 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
 }
 
 .tab-item {
