@@ -233,8 +233,6 @@ SearchModal.prototype.displayGroupedResults = function(windowGroups) {
 
     // 初始化窗口索引，默认选中当前窗口
     const currentWindowId = this._currentWindowId || null;
-    Logger.info('[displayGroupedResults] _currentWindowId:', currentWindowId);
-    windowGroups.forEach((g, i) => Logger.info('[displayGroupedResults] group', i, 'windowId:', g.windowId));
     let defaultIndex = 0;
     if (currentWindowId) {
         const idx = windowGroups.findIndex(g => g.windowId === currentWindowId);
@@ -245,6 +243,18 @@ SearchModal.prototype.displayGroupedResults = function(windowGroups) {
     if (defaultWindowTab) {
         this.updateWindowTabSelection(defaultWindowTab);
         this.switchToWindowGroup(defaultIndex);
+        // 在当前窗口分组中高亮活跃tab并滚动到可见
+        const activeGroup = windowGroups[defaultIndex];
+        if (activeGroup) {
+            const activeTabIndex = activeGroup.tabs.findIndex(t => t.active);
+            if (activeTabIndex !== -1) {
+                const visibleItems = this.modal.querySelectorAll('.window-group:not(.window-hidden) .result-item.tab-item');
+                if (visibleItems[activeTabIndex]) {
+                    visibleItems[activeTabIndex].classList.add('selected');
+                    visibleItems[activeTabIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }
+            }
+        }
     }
 
     // 添加窗口名称编辑事件

@@ -462,14 +462,9 @@ SearchModal.prototype.displayResults = function(results, query = '') {
     if (windowTabsHTML) {
         this.bindWindowTabEvents();
         this.bindDefaultSearchTabEvents();
-        // 默认选中当前窗口的tab导航
         const currentWindowId = this._currentWindowId || null;
-        Logger.info('[DefaultSearch] _currentWindowId:', currentWindowId);
         if (currentWindowId) {
-            const allTabs = this.modal.querySelectorAll('.window-tab');
-            allTabs.forEach(t => Logger.info('[DefaultSearch] window-tab data-window-id:', t.dataset.windowId));
             const matchedTab = this.modal.querySelector(`.window-tab[data-window-id="${currentWindowId}"]`);
-            Logger.info('[DefaultSearch] matchedTab:', matchedTab ? 'found' : 'not found');
             if (matchedTab) {
                 this.updateWindowTabSelection(matchedTab);
                 this.scrollToWindowInDefaultSearch(currentWindowId);
