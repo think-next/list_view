@@ -12,7 +12,7 @@ if (_LV) {
 Logger.info('Background script loaded');
 
 // 注入content script并显示模态框
-async function injectAndShowModal(tabId) {
+async function injectAndShowModal(tabId, windowId) {
     try {
         await chrome.scripting.executeScript({
             target: { tabId: tabId },
@@ -49,7 +49,7 @@ async function injectAndShowModal(tabId) {
                 });
             }
         });
-        chrome.tabs.sendMessage(tabId, { action: 'showModal', windowId: tab.windowId }, (response) => {
+        chrome.tabs.sendMessage(tabId, { action: 'showModal', windowId: windowId }, (response) => {
             if (chrome.runtime.lastError) {
                 Logger.error('Send message after inject failed:', chrome.runtime.lastError.message);
             }
@@ -71,9 +71,9 @@ chrome.action.onClicked.addListener((tab) => {
             return;
         }
         // Try sending message first (script may already be injected)
-        chrome.tabs.sendMessage(tab.id, { action: 'showModal' }, (response) => {
+        chrome.tabs.sendMessage(tab.id, { action: 'showModal', windowId: tab.windowId }, (response) => {
             if (chrome.runtime.lastError) {
-                injectAndShowModal(tab.id);
+                injectAndShowModal(tab.id, tab.windowId);
             }
         });
     } catch (error) {
@@ -82,8 +82,8 @@ chrome.action.onClicked.addListener((tab) => {
 });
 
 // 注入content script (legacy, kept for fallback)
-async function injectContentScript(tabId) {
-    return injectAndShowModal(tabId);
+async function injectContentScript(tabId, windowId) {
+    return injectAndShowModal(tabId, windowId);
 }
 
 // 监听键盘快捷键命令
@@ -117,7 +117,7 @@ async function handleShortcutTrigger() {
 
                 // 如果content script未加载，尝试注入
                 if (chrome.runtime.lastError.message.includes('Receiving end does not exist')) {
-                    injectContentScript(tab.id);
+                    injectContentScript(tab.id, tab.windowId);
                 }
             }
         });
