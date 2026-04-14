@@ -335,10 +335,9 @@ SearchModal.prototype.displayResults = function(results, query = '') {
     const resultsContainer = this.modal.querySelector('#resultsContainer');
     loadingIndicator.style.display = 'none';
 
-    // 保存搜索结果
     this.results = results;
-    this.windowGroups = null; // 清除Tab分组状态，避免键盘导航走错分支
-    this.selectedIndex = -1; // 重置选中状态
+    this.windowGroups = null;
+    this.selectedIndex = -1;
 
     // 保存AI推荐模块（如果存在）
     const aiDetection = resultsContainer.querySelector('.ai-detection');
@@ -462,8 +461,20 @@ SearchModal.prototype.displayResults = function(results, query = '') {
     // 绑定窗口Tab导航事件（如果有的话）
     if (windowTabsHTML) {
         this.bindWindowTabEvents();
-        // 为默认搜索页面的Tab导航添加特殊的滚动处理
         this.bindDefaultSearchTabEvents();
+        // 默认选中当前窗口的tab分组
+        const currentWindowId = this._currentWindowId || null;
+        if (currentWindowId) {
+            const matchedIdx = windowGroups.findIndex(g => g.windowId === currentWindowId);
+            if (matchedIdx !== -1) {
+                this.activeWindowIndex = matchedIdx;
+                const matchedTab = this.modal.querySelector(`.window-tab[data-group-index="${matchedIdx}"]`);
+                if (matchedTab) {
+                    this.updateWindowTabSelection(matchedTab);
+                    this.switchToWindowGroup(matchedIdx);
+                }
+            }
+        }
     }
 
     // 添加点击事件
