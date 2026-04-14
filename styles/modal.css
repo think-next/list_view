@@ -468,14 +468,15 @@
 
 /* 窗口分组样式 */
 .window-group {
-    margin-bottom: 20px;
+    margin-bottom: 0;
     background: #f1f5f9;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     transition: opacity 0.15s ease;
     display: flex;
     flex-direction: column;
-    max-height: 50vh;
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
 }
 
@@ -898,6 +899,13 @@
     flex: 1;
     overflow-y: auto;
     max-height: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.results-section:has(.window-group) {
+    overflow-y: hidden;
 }
 
 .loading {
