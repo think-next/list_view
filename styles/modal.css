@@ -687,19 +687,60 @@
 }
 
 .tab-item.active {
-    border-color: #28a745;
-    background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%);
-    border-left: 4px solid #22c55e;
-    box-shadow: 0 1px 4px rgba(34, 197, 94, 0.12);
+    border-color: #10b981;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border-left: 4px solid #10b981;
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.15), 0 2px 8px rgba(16, 185, 129, 0.1);
+    position: relative;
+}
+
+.tab-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 60%;
+    background: linear-gradient(180deg, #10b981, #34d399);
+    border-radius: 0 3px 3px 0;
+    animation: activeGlow 2s ease-in-out infinite;
+}
+
+@keyframes activeGlow {
+    0%, 100% { box-shadow: 0 0 4px rgba(16, 185, 129, 0.4); }
+    50% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.6); }
 }
 
 .tab-item.active .result-title {
-    color: #166534;
+    color: #065f46;
     font-weight: 600;
+    letter-spacing: 0.01em;
 }
 
 .tab-item.active .result-url {
-    color: #4ade80;
+    color: #34d399;
+}
+
+.tab-item.active .tab-favicon {
+    opacity: 1;
+    filter: drop-shadow(0 0 2px rgba(16, 185, 129, 0.4));
+}
+
+/* 暗色模式 */
+.modal-container[data-theme="dark"] .tab-item.active {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+    border-color: rgba(16, 185, 129, 0.3);
+    border-left: 4px solid #10b981;
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.1), 0 2px 8px rgba(16, 185, 129, 0.08);
+}
+
+.modal-container[data-theme="dark"] .tab-item.active .result-title {
+    color: #6ee7b7;
+}
+
+.modal-container[data-theme="dark"] .tab-item.active .result-url {
+    color: #059669;
 }
 
 .tab-item.pinned {
