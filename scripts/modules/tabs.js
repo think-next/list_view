@@ -326,14 +326,6 @@ SearchModal.prototype.loadAllTabs = async function() {
         if (response.success) {
             Logger.info('获取标签页成功:', response.results);
             this.allTabs = response.results; // 保存所有标签页数据
-            // 获取当前窗口ID，用于默认选中
-            try {
-                const win = await chrome.windows.getCurrent();
-                this._currentWindowId = win.id;
-                Logger.info('[loadAllTabs] 设置 _currentWindowId:', this._currentWindowId);
-            } catch(e) {
-                this._currentWindowId = null;
-            }
             this.displayGroupedResults(response.results);
         } else {
             Logger.error('获取标签页失败:', response.error);

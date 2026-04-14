@@ -8,7 +8,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ success: true, message: 'Content script已就绪' });
         return true;
     } else if (request.action === 'showModal') {
-        showModal();
+        showModal(request.windowId);
         sendResponse({ success: true, message: '模态框显示成功' });
         return true;
     } else if (request.action === 'hideModal') {
@@ -23,7 +23,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // 显示模态框
-async function showModal() {
+async function showModal(windowId) {
     try {
         // 检查页面是否支持模态框
         if (!isPageCompatible()) {
@@ -46,11 +46,7 @@ async function showModal() {
 
         // 创建新的模态框实例
         searchModal = new SearchModal();
-        // 尽早获取当前窗口ID，用于tab分组默认选中
-        try {
-            const win = await chrome.windows.getCurrent();
-            searchModal._currentWindowId = win.id;
-        } catch(e) { /* ignore */ }
+        if (windowId) searchModal._currentWindowId = windowId;
 
         // 显示模态框
         searchModal.show();

@@ -49,7 +49,7 @@ async function injectAndShowModal(tabId) {
                 });
             }
         });
-        chrome.tabs.sendMessage(tabId, { action: 'showModal' }, (response) => {
+        chrome.tabs.sendMessage(tabId, { action: 'showModal', windowId: tab.windowId }, (response) => {
             if (chrome.runtime.lastError) {
                 Logger.error('Send message after inject failed:', chrome.runtime.lastError.message);
             }
@@ -111,7 +111,7 @@ async function handleShortcutTrigger() {
         }
 
         // 向当前标签页发送消息，显示模态框
-        chrome.tabs.sendMessage(tab.id, { action: 'showModal' }, (response) => {
+        chrome.tabs.sendMessage(tab.id, { action: 'showModal', windowId: tab.windowId }, (response) => {
             if (chrome.runtime.lastError) {
                 Logger.error('发送消息失败:', chrome.runtime.lastError.message);
 
