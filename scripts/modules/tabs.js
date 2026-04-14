@@ -251,6 +251,9 @@ SearchModal.prototype.displayGroupedResults = function(windowGroups) {
                 const visibleItems = this.modal.querySelectorAll('.window-group:not(.window-hidden) .result-item.tab-item');
                 if (visibleItems[activeTabIndex]) {
                     visibleItems[activeTabIndex].classList.add('selected');
+                    // 同步 selectedIndex 到 DOM 数组中的真实位置
+                    const allVisibleItems = this.modal.querySelectorAll('.window-group:not(.window-hidden) .result-item');
+                    this.selectedIndex = Array.from(allVisibleItems).indexOf(visibleItems[activeTabIndex]);
                     visibleItems[activeTabIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
                 }
             }
