@@ -462,17 +462,13 @@ SearchModal.prototype.displayResults = function(results, query = '') {
     if (windowTabsHTML) {
         this.bindWindowTabEvents();
         this.bindDefaultSearchTabEvents();
-        // 默认选中当前窗口的tab分组
+        // 默认选中当前窗口的tab导航
         const currentWindowId = this._currentWindowId || null;
         if (currentWindowId) {
-            const matchedIdx = windowGroups.findIndex(g => g.windowId === currentWindowId);
-            if (matchedIdx !== -1) {
-                this.activeWindowIndex = matchedIdx;
-                const matchedTab = this.modal.querySelector(`.window-tab[data-group-index="${matchedIdx}"]`);
-                if (matchedTab) {
-                    this.updateWindowTabSelection(matchedTab);
-                    this.switchToWindowGroup(matchedIdx);
-                }
+            const matchedTab = this.modal.querySelector(`.window-tab[data-window-id="${currentWindowId}"]`);
+            if (matchedTab) {
+                this.updateWindowTabSelection(matchedTab);
+                this.scrollToWindowInDefaultSearch(currentWindowId);
             }
         }
     }
