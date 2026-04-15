@@ -575,6 +575,17 @@ SearchModal.prototype.refreshGroupedResultsDisplay = function() {
     if (windowTabsHTML) {
         this.bindWindowTabEvents();
     }
+
+    // 恢复窗口切换状态（删除条目后只显示当前窗口分组）
+    if (windowGroups.length > 1 && this.activeWindowIndex !== undefined && this.activeWindowIndex !== null) {
+        const targetIndex = Math.min(this.activeWindowIndex, windowGroups.length - 1);
+        this.activeWindowIndex = targetIndex;
+        const activeTab = this.modal.querySelector(`.window-tab[data-group-index="${targetIndex}"]`);
+        if (activeTab) {
+            this.updateWindowTabSelection(activeTab);
+        }
+        this.switchToWindowGroup(targetIndex);
+    }
     }
 
     // 刷新简单结果显示（默认搜索页面）
