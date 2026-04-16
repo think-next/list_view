@@ -185,4 +185,36 @@ SearchModal.prototype.getTypeLabel = function(type) {
     }
 
     // 加载所有标签页
+
+// Copy URL to clipboard with visual feedback
+SearchModal.prototype.copyToClipboard = function(url) {
+    if (!url) return;
+    navigator.clipboard.writeText(url).then(() => {
+        // Brief visual feedback via the search input placeholder
+        const searchInput = this.modal.querySelector('#searchInput');
+        const origPlaceholder = searchInput.placeholder;
+        searchInput.placeholder = '✅ URL copied!';
+        setTimeout(() => { searchInput.placeholder = origPlaceholder; }, 1200);
+    }).catch(() => {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = url;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        const searchInput = this.modal.querySelector('#searchInput');
+        const origPlaceholder = searchInput.placeholder;
+        searchInput.placeholder = '✅ URL copied!';
+        setTimeout(() => { searchInput.placeholder = origPlaceholder; }, 1200);
+    });
+};
+
+// Open URL in a new window
+SearchModal.prototype.openInNewWindow = function(url) {
+    if (!url) return;
+    chrome.windows.create({ url: url, focused: true });
+};
 })();

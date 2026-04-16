@@ -411,15 +411,22 @@ SearchModal.prototype.displayResults = function(results, query = '') {
         let actionButtons = '';
         let folderInfo = '';
 
+        // 通用快速操作按钮（复制URL + 新窗口打开）
+        const quickActions = `
+                <div class="quick-actions">
+                    <button class="quick-action-btn copy-btn" data-url="${this.escapeHtml(result.url)}" title="Copy URL">📋</button>
+                    <button class="quick-action-btn new-window-btn" data-url="${this.escapeHtml(result.url)}" title="Open in new window">🪟</button>
+                </div>
+            `;
+
         if (result.type === 'tab') {
-            // Tab类型：添加关闭按钮
             actionButtons = `
                 <div class="tab-actions">
                     <button class="close-tab-btn" data-tab-id="${result.tabId}" title="Close tab">×</button>
                 </div>
+                ${quickActions}
             `;
         } else if (result.type === 'bookmark') {
-            // Bookmark类型：添加书签目录和删除按钮
             if (result.folderPath) {
                 folderInfo = `<span class="bookmark-folder" data-folder-path="${this.escapeHtml(result.folderPath)}">📁 ${this.escapeHtml(result.folderPath)}</span>`;
             }
@@ -427,7 +434,10 @@ SearchModal.prototype.displayResults = function(results, query = '') {
                 <div class="bookmark-actions">
                     <button class="delete-bookmark-btn" data-bookmark-id="${result.id}" title="Delete bookmark">×</button>
                 </div>
+                ${quickActions}
             `;
+        } else {
+            actionButtons = quickActions;
         }
 
         return `
@@ -478,7 +488,8 @@ SearchModal.prototype.displayResults = function(results, query = '') {
             // 如果点击的是功能按钮，不处理主点击事件
             if (e.target.classList.contains('close-tab-btn') ||
                 e.target.classList.contains('delete-bookmark-btn') ||
-                e.target.classList.contains('bookmark-folder')) {
+                e.target.classList.contains('bookmark-folder') ||
+                e.target.classList.contains('quick-action-btn')) {
                 return;
             }
 
@@ -522,6 +533,19 @@ SearchModal.prototype.displayResults = function(results, query = '') {
             if (folderPath) {
                 // 在默认搜索场景下，进入书签目录视图
                 this.enterBookmarkFolderView(folderPath);
+            }
+        });
+    });
+
+    // 绑定快速操作按钮事件（复制URL / 新窗口打开）
+    this.modal.querySelectorAll('quick-action-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const url = btn.dataset.url;
+            if (btn.classList.contains('copy-btn')) {
+                this.copyToClipboard(url);
+            } else if (btn.classList.contains('new-window-btn')) {
+                this.openInNewWindow(url);
             }
         });
     });
@@ -677,15 +701,22 @@ SearchModal.prototype.refreshSimpleResultsDisplay = function(query = '') {
         let actionButtons = '';
         let folderInfo = '';
 
+        // 通用快速操作按钮（复制URL + 新窗口打开）
+        const quickActions = `
+                <div class="quick-actions">
+                    <button class="quick-action-btn copy-btn" data-url="${this.escapeHtml(result.url)}" title="Copy URL">📋</button>
+                    <button class="quick-action-btn new-window-btn" data-url="${this.escapeHtml(result.url)}" title="Open in new window">🪟</button>
+                </div>
+            `;
+
         if (result.type === 'tab') {
-            // Tab类型：添加关闭按钮
             actionButtons = `
                 <div class="tab-actions">
                     <button class="close-tab-btn" data-tab-id="${result.tabId}" title="Close tab">×</button>
                 </div>
+                ${quickActions}
             `;
         } else if (result.type === 'bookmark') {
-            // Bookmark类型：添加书签目录和删除按钮
             if (result.folderPath) {
                 folderInfo = `<span class="bookmark-folder" data-folder-path="${this.escapeHtml(result.folderPath)}">📁 ${this.escapeHtml(result.folderPath)}</span>`;
             }
@@ -693,7 +724,10 @@ SearchModal.prototype.refreshSimpleResultsDisplay = function(query = '') {
                 <div class="bookmark-actions">
                     <button class="delete-bookmark-btn" data-bookmark-id="${result.id}" title="Delete bookmark">×</button>
                 </div>
+                ${quickActions}
             `;
+        } else {
+            actionButtons = quickActions;
         }
 
         return `
@@ -723,7 +757,8 @@ SearchModal.prototype.refreshSimpleResultsDisplay = function(query = '') {
             // 如果点击的是功能按钮，不处理主点击事件
             if (e.target.classList.contains('close-tab-btn') ||
                 e.target.classList.contains('delete-bookmark-btn') ||
-                e.target.classList.contains('bookmark-folder')) {
+                e.target.classList.contains('bookmark-folder') ||
+                e.target.classList.contains('quick-action-btn')) {
                 return;
             }
 
@@ -761,6 +796,19 @@ SearchModal.prototype.refreshSimpleResultsDisplay = function(query = '') {
 
     // 绑定书签目录点击事件
     this.modal.querySelectorAll('.bookmark-folder').forEach(folder => {
+
+    // 绑定快速操作按钮事件（复制URL / 新窗口打开）
+    this.modal.querySelectorAll('quick-action-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const url = btn.dataset.url;
+            if (btn.classList.contains('copy-btn')) {
+                this.copyToClipboard(url);
+            } else if (btn.classList.contains('new-window-btn')) {
+                this.openInNewWindow(url);
+            }
+        });
+    });
         folder.addEventListener('click', (e) => {
             e.stopPropagation();
             const folderPath = folder.dataset.folderPath;
