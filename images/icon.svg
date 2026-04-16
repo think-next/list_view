@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Background rounded square -->
+  <rect x="4" y="4" width="120" height="120" rx="28" ry="28" fill="#2563eb"/>
+  
+  <!-- Subtle gradient overlay for depth -->
+  <rect x="4" y="4" width="120" height="120" rx="28" ry="28" fill="url(#bgGrad)"/>
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Magnifying glass lens -->
+  <circle cx="52" cy="50" r="27" fill="rgba(255,255,255,0.08)" stroke="white" stroke-width="8.5"/>
+  
+  <!-- Lens inner shine -->
+  <ellipse cx="44" cy="42" rx="10" ry="8" fill="rgba(255,255,255,0.15)" transform="rotate(-20 44 42)"/>
+  
+  <!-- Handle merging into lightning -->
+  <line x1="72" y1="70" x2="86" y2="84" stroke="white" stroke-width="8.5" stroke-linecap="round"/>
+  
+  <!-- Lightning bolt -->
+  <polygon points="80,80 70,98 78,98 72,116 96,88 84,88 90,80" fill="#fbbf24" stroke="#f59e0b" stroke-width="1" stroke-linejoin="round"/>
+</svg>
