@@ -212,8 +212,8 @@ SearchModal.prototype.show = function() {
     // 预加载AI开关配置（不阻塞UI）
     this.checkAIEnabled().catch(() => { });
 
-    // 默认显示list tab内容，但保持搜索框为默认状态
-    this.loadAllTabs();
+    // 默认显示搜索历史（不加载所有tabs，延迟到用户操作）
+    this.showSearchHistory();
 
     // 检查是否要通过命令触发统计（从存储中读取）
     chrome.storage.local.get(['showStatsOnOpen'], (result) => {
@@ -282,7 +282,7 @@ SearchModal.prototype.showWelcomeMessage = function() {
         Logger.info('历史记录模式下显示欢迎信息，加载最近20条历史记录');
         this.loadRecentHistory();
     } else {
-        // Default: try to show search history, fall back to tabs
+        // Default: show search history (consistent across all modes)
         this.showSearchHistory();
     }
     }
@@ -538,7 +538,7 @@ SearchModal.prototype.displayResults = function(results, query = '') {
     });
 
     // 绑定快速操作按钮事件（复制URL / 新窗口打开）
-    this.modal.querySelectorAll('quick-action-btn').forEach(btn => {
+    this.modal.querySelectorAll('.quick-action-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const url = btn.dataset.url;
@@ -679,146 +679,9 @@ SearchModal.prototype.clearFilter = function() {
     // 获取类型标签
 
 SearchModal.prototype.refreshSimpleResultsDisplay = function(query = '') {
-    const resultsContainer = this.modal.querySelector('#resultsContainer');
-    if (!resultsContainer) return;
-
-    // 重新生成HTML
-    const resultsHTML = this.results.map(result => {
-        const date = new Date(result.lastVisitTime || result.dateAdded);
-        const formattedDate = this.formatDate(date);
-        const typeLabel = this.getTypeLabel(result.type);
-        const truncatedUrl = this.truncateUrl(result.url);
-
-        // 对于tab类型，添加窗口标签到标题栏右侧
-        let windowTag = '';
-        if (result.type === 'tab' && result.windowId) {
-            // 获取用户自定义的窗口名称
-            const customWindowName = this.getWindowName(result.windowId, result.windowTitle);
-            windowTag = `<span class="window-tag">${this.escapeHtml(customWindowName)}</span>`;
-        }
-
-        // 为不同类型的搜索结果添加相应的功能按钮
-        let actionButtons = '';
-        let folderInfo = '';
-
-        // 通用快速操作按钮（复制URL + 新窗口打开）
-        const quickActions = `
-                <div class="quick-actions">
-                    <button class="quick-action-btn copy-btn" data-url="${this.escapeHtml(result.url)}" title="Copy URL">📋</button>
-                    <button class="quick-action-btn new-window-btn" data-url="${this.escapeHtml(result.url)}" title="Open in new window">🪟</button>
-                </div>
-            `;
-
-        if (result.type === 'tab') {
-            actionButtons = `
-                <div class="tab-actions">
-                    <button class="close-tab-btn" data-tab-id="${result.tabId}" title="Close tab">×</button>
-                </div>
-                ${quickActions}
-            `;
-        } else if (result.type === 'bookmark') {
-            if (result.folderPath) {
-                folderInfo = `<span class="bookmark-folder" data-folder-path="${this.escapeHtml(result.folderPath)}">📁 ${this.escapeHtml(result.folderPath)}</span>`;
-            }
-            actionButtons = `
-                <div class="bookmark-actions">
-                    <button class="delete-bookmark-btn" data-bookmark-id="${result.id}" title="Delete bookmark">×</button>
-                </div>
-                ${quickActions}
-            `;
-        } else {
-            actionButtons = quickActions;
-        }
-
-        return `
-            <div class="result-item ${result.type}-type" data-url="${result.url}" ${result.type === 'tab' ? `data-tab-id="${result.tabId}" data-window-id="${result.windowId}"` : ''} ${result.type === 'bookmark' ? `data-bookmark-id="${result.id}"` : ''}>
-                <div class="result-header">
-                    <div class="result-header-left">
-                        <span class="result-type">${typeLabel}</span>
-                        <span class="result-title">${this.highlightText(result.title, query)}</span>
-                        ${folderInfo}
-                    </div>
-                    <div class="result-header-right">
-                        ${actionButtons}
-                        ${windowTag}
-                        <span class="result-date">${formattedDate}</span>
-                    </div>
-                </div>
-                <div class="result-url">${this.escapeHtml(truncatedUrl)}</div>
-            </div>
-        `;
-    }).join('');
-
-    resultsContainer.innerHTML = resultsHTML;
-
-    // 重新绑定点击事件
-    this.modal.querySelectorAll('.result-item').forEach((item, index) => {
-        item.addEventListener('click', (e) => {
-            // 如果点击的是功能按钮，不处理主点击事件
-            if (e.target.classList.contains('close-tab-btn') ||
-                e.target.classList.contains('delete-bookmark-btn') ||
-                e.target.classList.contains('bookmark-folder') ||
-                e.target.classList.contains('quick-action-btn')) {
-                return;
-            }
-
-            const result = this.results[index];
-            if (result.type === 'tab') {
-                // 标签页类型：切换到对应标签页
-                chrome.tabs.update(result.tabId, { active: true });
-            } else {
-                // 书签和历史类型：打开新标签页
-                window.open(result.url, '_blank');
-            }
-            this.close();
-        });
-    });
-
-    // 绑定关闭标签页按钮事件
-    this.modal.querySelectorAll('.close-tab-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const tabId = parseInt(btn.dataset.tabId);
-            this.closeTab(tabId);
-        });
-    });
-
-    // 绑定删除书签按钮事件
-    this.modal.querySelectorAll('.delete-bookmark-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const bookmarkId = btn.dataset.bookmarkId;
-            if (bookmarkId) {
-                this.deleteBookmark(bookmarkId);
-            }
-        });
-    });
-
-    // 绑定书签目录点击事件
-    this.modal.querySelectorAll('.bookmark-folder').forEach(folder => {
-
-    // 绑定快速操作按钮事件（复制URL / 新窗口打开）
-    this.modal.querySelectorAll('quick-action-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const url = btn.dataset.url;
-            if (btn.classList.contains('copy-btn')) {
-                this.copyToClipboard(url);
-            } else if (btn.classList.contains('new-window-btn')) {
-                this.openInNewWindow(url);
-            }
-        });
-    });
-        folder.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const folderPath = folder.dataset.folderPath;
-            if (folderPath) {
-                // 在默认搜索场景下，进入书签目录视图
-                this.enterBookmarkFolderView(folderPath);
-            }
-        });
-    });
-    }
+    // Delegate to displayResults to avoid code duplication
+    this.displayResults(this.results, query || this._currentQuery || '');
+};
 
     // 重新构建windowGroups数据
 
@@ -1091,6 +954,9 @@ SearchModal.prototype.hideWindowMenu = function() {
     // 合并窗口
 
 SearchModal.prototype.mergeWindows = async function(sourceWindowId, targetWindowId) {
+    // 二次确认
+    if (!confirm('Merge these windows? The source window will be closed.')) return;
+
     try {
         Logger.info(`合并窗口: ${sourceWindowId} -> ${targetWindowId}`);
 

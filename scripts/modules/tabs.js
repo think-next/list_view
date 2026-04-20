@@ -147,6 +147,7 @@ SearchModal.prototype.displayGroupedResults = function(windowGroups) {
                         `;
         }).join('')}
                 </div>
+                <span style="font-size:10px;color:#94a3b8;padding:0 8px;">← → to switch windows</span>
             </div>
         `;
     }
@@ -562,6 +563,7 @@ SearchModal.prototype.refreshGroupedResultsDisplay = function() {
                         `;
         }).join('')}
                 </div>
+                <span style="font-size:10px;color:#94a3b8;padding:0 8px;">← → to switch windows</span>
             </div>
         `;
     }

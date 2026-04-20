@@ -261,43 +261,30 @@ async function handleSearchRequest(query, filter) {
             return;
         }
 
-        // 原有分支（非默认）走老逻辑
+        // 原有分支（非默认）走统一去重逻辑
 
         // 按时间排序
         results.sort((a, b) => new Date(b.lastVisitTime || b.dateAdded) - new Date(a.lastVisitTime || a.dateAdded));
 
-        // 去重处理：按URL路径去重，保留最新的记录
-        const uniqueResults = deduplicateByUrlPath(results);
-
-        // 获取用户配置的最大结果数
+        // 读取用户配置的最大结果数
+        let maxResults = 12;
         try {
-            const result = await new Promise((resolve, reject) => {
-                chrome.storage.local.get(['maxResults'], (result) => {
-                    if (chrome.runtime.lastError) {
-                        reject(chrome.runtime.lastError);
-                    } else {
-                        resolve(result);
-                    }
+            const cfg = await new Promise((resolve, reject) => {
+                chrome.storage.local.get(['maxResults'], (r) => {
+                    if (chrome.runtime.lastError) reject(chrome.runtime.lastError);
+                    else resolve(r);
                 });
             });
+            maxResults = cfg.maxResults || 12;
+        } catch (e) { /* use default */ }
 
-            const maxResults = result.maxResults || 12;
+        // 统一使用 toBaseUrl 去重
+        const uniqueResults = dedupeAndCapByBaseUrl(results, maxResults || 12);
 
-            // 返回配置数量的结果
-            return {
-                success: true,
-                results: uniqueResults.slice(0, maxResults),
-                maxResults: maxResults
-            };
-        } catch (error) {
-            Logger.error('获取存储配置失败:', error);
-            // 使用默认值
-            return {
-                success: true,
-                results: uniqueResults.slice(0, 12),
-                maxResults: 12
-            };
-        }
+        return {
+            success: true,
+            results: uniqueResults
+        };
 
     } catch (error) {
         Logger.error('搜索出错:', error);
@@ -627,32 +614,32 @@ async function groupTabsByWindow(tabs, query) {
 async function handleSwitchToTabRequest(tabId, windowId) {
     try {
 
-        // 先切换到对应窗口
-        chrome.windows.update(windowId, { focused: true }, () => {
-            if (chrome.runtime.lastError) {
-                Logger.error('切换窗口失败:', chrome.runtime.lastError);
-                return {
-                    success: false,
-                    error: chrome.runtime.lastError.message
-                };
-                return;
-            }
-
-            // 然后切换到指定标签页
-            chrome.tabs.update(tabId, { active: true }, () => {
+        return new Promise((resolve) => {
+            chrome.windows.update(windowId, { focused: true }, () => {
                 if (chrome.runtime.lastError) {
-                    Logger.error('切换标签页失败:', chrome.runtime.lastError);
-                    return {
+                    Logger.error('切换窗口失败:', chrome.runtime.lastError);
+                    resolve({
                         success: false,
                         error: chrome.runtime.lastError.message
-                    };
+                    });
                     return;
                 }
 
-                return {
-                    success: true,
-                    message: '标签页切换成功'
-                };
+                chrome.tabs.update(tabId, { active: true }, () => {
+                    if (chrome.runtime.lastError) {
+                        Logger.error('切换标签页失败:', chrome.runtime.lastError);
+                        resolve({
+                            success: false,
+                            error: chrome.runtime.lastError.message
+                        });
+                        return;
+                    }
+
+                    resolve({
+                        success: true,
+                        message: '标签页切换成功'
+                    });
+                });
             });
         });
     } catch (error) {
@@ -680,20 +667,21 @@ async function handleGetAllTabsRequest() {
 async function handleCloseTabRequest(tabId) {
     try {
 
-        chrome.tabs.remove(tabId, () => {
-            if (chrome.runtime.lastError) {
-                Logger.error('关闭标签页失败:', chrome.runtime.lastError);
-                return {
-                    success: false,
-                    error: chrome.runtime.lastError.message
-                };
-                return;
-            }
-
-            return {
-                success: true,
-                message: '标签页已关闭'
-            };
+        return new Promise((resolve) => {
+            chrome.tabs.remove(tabId, () => {
+                if (chrome.runtime.lastError) {
+                    Logger.error('关闭标签页失败:', chrome.runtime.lastError);
+                    resolve({
+                        success: false,
+                        error: chrome.runtime.lastError.message
+                    });
+                    return;
+                }
+                resolve({
+                    success: true,
+                    message: '标签页已关闭'
+                });
+            });
         });
     } catch (error) {
         Logger.error('关闭标签页出错:', error);
@@ -752,39 +740,37 @@ async function handleHistoryStatsRequest() {
         const endTime = Date.now();
         const startTime = endTime - (7 * 24 * 60 * 60 * 1000); // 7天前
 
-        chrome.history.search({
-            text: '',
-            startTime: startTime,
-            endTime: endTime,
-            maxResults: 1000 // 获取更多记录用于统计
-        }, (results) => {
-            if (chrome.runtime.lastError) {
-                Logger.error('获取历史记录失败:', chrome.runtime.lastError);
-                return {
-                    success: false,
-                    error: chrome.runtime.lastError.message
-                };
-                return;
-            }
+        return new Promise((resolve) => {
+            chrome.history.search({
+                text: '',
+                startTime: startTime,
+                endTime: endTime,
+                maxResults: 1000
+            }, (results) => {
+                if (chrome.runtime.lastError) {
+                    Logger.error('获取历史记录失败:', chrome.runtime.lastError);
+                    resolve({
+                        success: false,
+                        error: chrome.runtime.lastError.message
+                    });
+                    return;
+                }
 
-            try {
-                // 处理历史记录，提取域名和路径
-                const domainStats = processHistoryForStats(results);
-
-                // 获取前3个域名，每个域名下前3个路径
-                const topDomains = getTopDomainsWithPaths(domainStats, 3, 3);
-
-                return {
-                    success: true,
-                    stats: topDomains
-                };
-            } catch (error) {
-                Logger.error('处理历史统计失败:', error);
-                return {
-                    success: false,
-                    error: error.message
-                };
-            }
+                try {
+                    const domainStats = processHistoryForStats(results);
+                    const topDomains = getTopDomainsWithPaths(domainStats, 3, 3);
+                    resolve({
+                        success: true,
+                        stats: topDomains
+                    });
+                } catch (error) {
+                    Logger.error('处理历史统计失败:', error);
+                    resolve({
+                        success: false,
+                        error: error.message
+                    });
+                }
+            });
         });
     } catch (error) {
         Logger.error('历史统计请求失败:', error);
@@ -1484,52 +1470,45 @@ async function handleGetRecentHistoryRequest(limit) {
         const endTime = Date.now();
         const startTime = endTime - (7 * 24 * 60 * 60 * 1000); // 最近7天
 
-        chrome.history.search({
-            text: '',
-            startTime: startTime,
-            endTime: endTime,
-            maxResults: limit * 3 // 获取更多结果用于去重
-        }, (historyItems) => {
-            if (chrome.runtime.lastError) {
-                Logger.error('历史记录搜索错误:', chrome.runtime.lastError);
-                return { success: false, error: chrome.runtime.lastError.message };
-                return;
-            }
+        return new Promise((resolve) => {
+            chrome.history.search({
+                text: '',
+                startTime: startTime,
+                endTime: endTime,
+                maxResults: limit * 3
+            }, (historyItems) => {
+                if (chrome.runtime.lastError) {
+                    Logger.error('历史记录搜索错误:', chrome.runtime.lastError);
+                    resolve({ success: false, error: chrome.runtime.lastError.message });
+                    return;
+                }
 
-            // 按访问时间排序（从新到旧）
-            historyItems.sort((a, b) => b.lastVisitTime - a.lastVisitTime);
+                historyItems.sort((a, b) => b.lastVisitTime - a.lastVisitTime);
 
-            // URL去重：去掉?之前的部分进行去重
-            const urlMap = new Map();
-            const uniqueHistoryItems = [];
+                const urlMap = new Map();
+                const uniqueHistoryItems = [];
 
-            for (const item of historyItems) {
-                if (!item.url) continue;
-
-                // 去掉URL中?之前的部分作为去重键
-                const urlKey = item.url.split('?')[0];
-
-                if (!urlMap.has(urlKey)) {
-                    urlMap.set(urlKey, true);
-                    uniqueHistoryItems.push({
-                        title: item.title,
-                        url: item.url,
-                        type: 'history',
-                        lastVisitTime: item.lastVisitTime,
-                        visitCount: item.visitCount
-                    });
-
-                    // 达到限制数量就停止
-                    if (uniqueHistoryItems.length >= limit) {
-                        break;
+                for (const item of historyItems) {
+                    if (!item.url) continue;
+                    const urlKey = item.url.split('?')[0];
+                    if (!urlMap.has(urlKey)) {
+                        urlMap.set(urlKey, true);
+                        uniqueHistoryItems.push({
+                            title: item.title,
+                            url: item.url,
+                            type: 'history',
+                            lastVisitTime: item.lastVisitTime,
+                            visitCount: item.visitCount
+                        });
+                        if (uniqueHistoryItems.length >= limit) break;
                     }
                 }
-            }
 
-            return {
-                success: true,
-                results: uniqueHistoryItems
-            };
+                resolve({
+                    success: true,
+                    results: uniqueHistoryItems
+                });
+            });
         });
     } catch (error) {
         Logger.error('获取最近历史记录失败:', error);
@@ -1540,11 +1519,13 @@ async function handleGetRecentHistoryRequest(limit) {
 // 处理获取窗口名称请求
 async function handleGetWindowNamesRequest() {
     try {
-        chrome.storage.local.get(['windowNames'], (result) => {
-            return {
-                success: true,
-                windowNames: result.windowNames || {}
-            };
+        return new Promise((resolve) => {
+            chrome.storage.local.get(['windowNames'], (result) => {
+                resolve({
+                    success: true,
+                    windowNames: result.windowNames || {}
+                });
+            });
         });
     } catch (error) {
         Logger.error('获取窗口名称失败:', error);

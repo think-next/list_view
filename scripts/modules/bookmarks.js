@@ -351,6 +351,9 @@ SearchModal.prototype.clearFolderFilter = function() {
     // 在分组内搜索
 
 SearchModal.prototype.deleteBookmark = async function(bookmarkId) {
+    // 确认弹窗
+    if (!confirm('Are you sure you want to delete this bookmark?')) return;
+
     try {
         const response = await this.sendMessageToBackground({
             action: 'deleteBookmark',
