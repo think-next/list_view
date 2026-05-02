@@ -439,7 +439,12 @@ SearchModal.prototype.removeTabFromResults = function(tabId, currentIndex) {
 
     // 如果还有结果，更新选择状态
     if (this.results.length > 0) {
-        this.updateSelection();
+        const items = this.modal.querySelectorAll('.result-item');
+            items.forEach(i => i.classList.remove('selected'));
+            if (this.selectedIndex >= 0 && this.selectedIndex < items.length) {
+                items[this.selectedIndex].classList.add('selected');
+                items[this.selectedIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
     }
     }
 
