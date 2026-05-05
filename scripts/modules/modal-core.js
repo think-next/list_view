@@ -212,8 +212,8 @@ SearchModal.prototype.show = function() {
     // 预加载AI开关配置（不阻塞UI）
     this.checkAIEnabled().catch(() => { });
 
-    // 默认显示搜索历史（不加载所有tabs，延迟到用户操作）
-    this.showSearchHistory();
+    // 默认加载并显示所有标签页
+    this.loadAllTabs();
 
     // 检查是否要通过命令触发统计（从存储中读取）
     chrome.storage.local.get(['showStatsOnOpen'], (result) => {

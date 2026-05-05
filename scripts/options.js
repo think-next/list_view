@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     // 2秒后恢复
                     setTimeout(() => {
                         saveBtn.textContent = 'SAVE';
-                        saveBtn.style.background = 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)';
+                        saveBtn.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
                     }, 2000);
                 }, 800);
             } else {
@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     // 1.5秒后恢复
                     setTimeout(() => {
                         saveBtn.textContent = 'SAVE';
-                        saveBtn.style.background = 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)';
+                        saveBtn.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
                     }, 1500);
                 }, 800);
             }
