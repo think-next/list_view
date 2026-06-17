@@ -185,6 +185,7 @@ SearchModal.prototype.displayGroupedResults = function(windowGroups) {
                             ${tab.pinned ? '<span class="pinned-indicator">📌</span>' : ''}
                         </div>
                         <div class="tab-actions">
+                            <button class="move-tab-btn" data-tab-id="${tab.tabId}" data-window-id="${tab.windowId}" title="Move tab to another window">↗</button>
                             <button class="close-tab-btn" data-tab-id="${tab.tabId}" title="Close tab">×</button>
                         </div>
                     </div>
@@ -522,6 +523,7 @@ SearchModal.prototype.refreshGroupedResultsDisplay = function() {
                             ${tab.pinned ? '<span class="pinned-indicator">📌</span>' : ''}
                         </div>
                         <div class="tab-actions">
+                            <button class="move-tab-btn" data-tab-id="${tab.tabId}" data-window-id="${tab.windowId}" title="Move tab to another window">↗</button>
                             <button class="close-tab-btn" data-tab-id="${tab.tabId}" title="Close tab">×</button>
                         </div>
                     </div>
@@ -743,12 +745,23 @@ SearchModal.prototype.bindTabEvents = function() {
         });
     });
 
-    // 添加关闭按钮事件
+    // 添加关闭按钮事件（分组视图）
     this.modal.querySelectorAll('.close-tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const tabId = parseInt(btn.dataset.tabId);
             this.closeTab(tabId);
+        });
+    });
+
+    // 添加移动标签页按钮事件
+    this.modal.querySelectorAll('.move-tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const tabId = parseInt(btn.dataset.tabId);
+            const sourceWindowId = parseInt(btn.dataset.windowId);
+            const windowGroups = this.rebuildWindowGroups();
+            this.showMoveTabMenu(btn, tabId, sourceWindowId, windowGroups);
         });
     });
     }
