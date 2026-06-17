@@ -758,6 +758,9 @@ SearchModal.prototype.editWindowName = function(titleElement) {
         titleElement.style.display = 'block';
         input.remove();
 
+        // 同步更新 modal 中所有显示该窗口名称的元素
+        this.syncWindowNameDOM(windowId, newName);
+
         // 保存到localStorage
         this.saveWindowName(windowId, newName);
     };
@@ -780,6 +783,27 @@ SearchModal.prototype.editWindowName = function(titleElement) {
         }
     });
     }
+
+    // 同步更新 modal 中所有显示该窗口名称的 DOM 元素
+SearchModal.prototype.syncWindowNameDOM = function(windowId, newName) {
+        try {
+            // 更新所有 window-title h4 元素（分组视图）
+            this.modal.querySelectorAll('.window-title').forEach(el => {
+                if (parseInt(el.dataset.windowId) === windowId) {
+                    el.textContent = newName;
+                }
+            });
+            // 更新所有 window-tab 中的 window-tab-name span（默认搜索视图的顶部标签）
+            this.modal.querySelectorAll('.window-tab-name').forEach(el => {
+                const tab = el.closest('.window-tab');
+                if (tab && parseInt(tab.dataset.windowId) === windowId) {
+                    el.textContent = newName;
+                }
+            });
+        } catch (error) {
+            Logger.error('同步窗口名称DOM失败:', error);
+        }
+    };
 
     // 保存窗口名称到chrome.storage.local（通过background）
 
