@@ -83,6 +83,41 @@ SearchModal.prototype.batchMoveToNewWindow = function() {
     });
 };
 
+SearchModal.prototype.getDomainColor = function(domain) {
+    // 基于域名生成确定性颜色
+    let hash = 0;
+    for (let i = 0; i < domain.length; i++) {
+        hash = ((hash << 5) - hash) + domain.charCodeAt(i);
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    // 使用HSL色相环生成颜色，饱和度60%，亮度50%
+    const hue = Math.abs(hash) % 360;
+    return `hsla(${hue}, 60%, 50%, 0.3)`;
+};
+
+SearchModal.prototype.applyDomainColors = function() {
+    // 对每个可见的window group，为相同域名的tab设置背景色
+    this.modal.querySelectorAll('.window-group:not(.window-hidden)').forEach(group => {
+        const domainColorMap = new Map(); // domain -> color
+        const tabItems = group.querySelectorAll('.tab-item');
+        tabItems.forEach(item => {
+            const url = item.dataset.url;
+            if (!url) return;
+            try {
+                const domain = new URL(url).hostname;
+                if (!domainColorMap.has(domain)) {
+                    domainColorMap.set(domain, this.getDomainColor(domain));
+                }
+                item.style.setProperty('--domain-color', domainColorMap.get(domain));
+                item.style.backgroundColor = domainColorMap.get(domain);
+                item.classList.add('domain-colored');
+            } catch(e) {
+                // ignore invalid URLs
+            }
+        });
+    });
+};
+
 SearchModal.prototype.displayGroupedResults = function(windowGroups) {
     Logger.info('显示分组结果:', windowGroups);
     const loadingIndicator = this.modal.querySelector('#loadingIndicator');
@@ -185,6 +220,7 @@ SearchModal.prototype.displayGroupedResults = function(windowGroups) {
                             ${tab.pinned ? '<span class="pinned-indicator">📌</span>' : ''}
                         </div>
                         <div class="tab-actions">
+                            <button class="move-tab-btn" data-tab-id="${tab.tabId}" data-window-id="${tab.windowId}" title="Move tab to another window">↗</button>
                             <button class="close-tab-btn" data-tab-id="${tab.tabId}" title="Close tab">×</button>
                         </div>
                     </div>
@@ -231,6 +267,9 @@ SearchModal.prototype.displayGroupedResults = function(windowGroups) {
 
     // 绑定窗口Tab导航事件
     this.bindWindowTabEvents();
+
+    // 应用域名颜色
+    this.applyDomainColors();
 
     // 初始化窗口索引，默认选中当前窗口
     const currentWindowId = this._currentWindowId || null;
@@ -522,6 +561,7 @@ SearchModal.prototype.refreshGroupedResultsDisplay = function() {
                             ${tab.pinned ? '<span class="pinned-indicator">📌</span>' : ''}
                         </div>
                         <div class="tab-actions">
+                            <button class="move-tab-btn" data-tab-id="${tab.tabId}" data-window-id="${tab.windowId}" title="Move tab to another window">↗</button>
                             <button class="close-tab-btn" data-tab-id="${tab.tabId}" title="Close tab">×</button>
                         </div>
                     </div>
@@ -582,6 +622,9 @@ SearchModal.prototype.refreshGroupedResultsDisplay = function() {
     if (windowTabsHTML) {
         this.bindWindowTabEvents();
     }
+
+    // 应用域名颜色
+    this.applyDomainColors();
 
     // 恢复窗口切换状态（删除条目后只显示当前窗口分组）
     if (windowGroups.length > 1 && this.activeWindowIndex !== undefined && this.activeWindowIndex !== null) {
@@ -743,12 +786,23 @@ SearchModal.prototype.bindTabEvents = function() {
         });
     });
 
-    // 添加关闭按钮事件
+    // 添加关闭按钮事件（分组视图）
     this.modal.querySelectorAll('.close-tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const tabId = parseInt(btn.dataset.tabId);
             this.closeTab(tabId);
+        });
+    });
+
+    // 添加移动标签页按钮事件
+    this.modal.querySelectorAll('.move-tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const tabId = parseInt(btn.dataset.tabId);
+            const sourceWindowId = parseInt(btn.dataset.windowId);
+            const windowGroups = this.rebuildWindowGroups();
+            this.showMoveTabMenu(btn, tabId, sourceWindowId, windowGroups);
         });
     });
     }

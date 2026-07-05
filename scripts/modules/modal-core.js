@@ -422,6 +422,7 @@ SearchModal.prototype.displayResults = function(results, query = '') {
         if (result.type === 'tab') {
             actionButtons = `
                 <div class="tab-actions">
+                    <button class="move-tab-btn" data-tab-id="${result.tabId}" data-window-id="${result.windowId || ''}" title="Move tab to another window">↗</button>
                     <button class="close-tab-btn" data-tab-id="${result.tabId}" title="Close tab">×</button>
                 </div>
                 ${quickActions}
@@ -511,6 +512,17 @@ SearchModal.prototype.displayResults = function(results, query = '') {
             e.stopPropagation();
             const tabId = parseInt(btn.dataset.tabId);
             this.closeTab(tabId);
+        });
+    });
+
+    // 绑定移动标签页按钮事件（默认搜索视图）
+    this.modal.querySelectorAll('.move-tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const tabId = parseInt(btn.dataset.tabId);
+            const sourceWindowId = btn.dataset.windowId ? parseInt(btn.dataset.windowId) : null;
+            const windowGroups = this.rebuildWindowGroups();
+            this.showMoveTabMenu(btn, tabId, sourceWindowId, windowGroups);
         });
     });
 
@@ -758,6 +770,9 @@ SearchModal.prototype.editWindowName = function(titleElement) {
         titleElement.style.display = 'block';
         input.remove();
 
+        // 同步更新 modal 中所有显示该窗口名称的元素
+        this.syncWindowNameDOM(windowId, newName);
+
         // 保存到localStorage
         this.saveWindowName(windowId, newName);
     };
@@ -780,6 +795,103 @@ SearchModal.prototype.editWindowName = function(titleElement) {
         }
     });
     }
+
+    // 同步更新 modal 中所有显示该窗口名称的 DOM 元素
+SearchModal.prototype.syncWindowNameDOM = function(windowId, newName) {
+        try {
+            // 更新所有 window-title h4 元素（分组视图）
+            this.modal.querySelectorAll('.window-title').forEach(el => {
+                if (parseInt(el.dataset.windowId) === windowId) {
+                    el.textContent = newName;
+                }
+            });
+            // 更新所有 window-tab 中的 window-tab-name span（默认搜索视图的顶部标签）
+            this.modal.querySelectorAll('.window-tab-name').forEach(el => {
+                const tab = el.closest('.window-tab');
+                if (tab && parseInt(tab.dataset.windowId) === windowId) {
+                    el.textContent = newName;
+                }
+            });
+        } catch (error) {
+            Logger.error('同步窗口名称DOM失败:', error);
+        }
+    };
+
+    // 显示移动标签菜单
+SearchModal.prototype.showMoveTabMenu = function(btn, tabId, sourceWindowId, windowGroups) {
+        this.hideWindowMenu();
+
+        const otherWindows = windowGroups.filter(g => g.windowId !== sourceWindowId);
+        if (otherWindows.length === 0) {
+            Logger.info('没有其他窗口可移动');
+            return;
+        }
+
+        const menu = document.createElement('div');
+        menu.className = 'window-menu';
+        menu.innerHTML = `
+            <div class="window-menu-header">Move tab to...</div>
+            <div class="window-menu-items">
+                ${otherWindows.map(group => {
+                    const targetName = this.getWindowName(group.windowId, group.windowTitle);
+                    return `
+                        <div class="window-menu-item" data-target-window="${group.windowId}">
+                            <span class="menu-icon">↗</span>
+                            <span class="menu-text">${this.escapeHtml(targetName)}</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+
+        const rect = btn.getBoundingClientRect();
+        menu.style.position = 'absolute';
+        menu.style.top = `${rect.bottom + 5}px`;
+        menu.style.left = `${rect.left}px`;
+        menu.style.zIndex = '1000002';
+        document.body.appendChild(menu);
+
+        menu.querySelectorAll('.window-menu-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const targetWindowId = parseInt(item.dataset.targetWindow);
+                this.moveTabToWindow(tabId, sourceWindowId, targetWindowId);
+                this.hideWindowMenu();
+            });
+        });
+
+        // 点击其他地方关闭菜单
+        const closeHandler = (e) => {
+            if (!menu.contains(e.target)) {
+                menu.remove();
+                document.removeEventListener('click', closeHandler);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', closeHandler), 0);
+    };
+
+    // 移动标签页到其他窗口
+SearchModal.prototype.moveTabToWindow = async function(tabId, sourceWindowId, targetWindowId) {
+        try {
+            Logger.info(`移动标签 ${tabId}: window ${sourceWindowId} -> ${targetWindowId}`);
+            const response = await chrome.runtime.sendMessage({
+                action: 'moveTabToWindow',
+                tabId,
+                sourceWindowId,
+                targetWindowId
+            });
+            if (response && response.success) {
+                Logger.info('标签页移动成功');
+                // 刷新显示
+                this.removeTabFromResults(tabId, -1);
+                this.refreshResultsDisplay();
+            } else {
+                Logger.error('标签页移动失败:', response.error);
+            }
+        } catch (error) {
+            Logger.error('移动标签页出错:', error);
+        }
+    };
 
     // 保存窗口名称到chrome.storage.local（通过background）
 

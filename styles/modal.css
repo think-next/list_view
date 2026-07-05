@@ -737,6 +737,33 @@
     filter: drop-shadow(0 0 2px rgba(16, 185, 129, 0.4));
 }
 
+/* 域名着色tab选中时的边框高亮动画 */
+.tab-item.domain-colored.selected,
+.tab-item.domain-colored.result-item.selected {
+    animation: domainBorderGlow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes domainBorderGlow {
+    0% {
+        box-shadow: 0 0 4px var(--domain-color, rgba(37, 99, 235, 0.4)),
+                    inset 0 0 2px rgba(255, 255, 255, 0.1);
+        border-color: var(--domain-color, #2563eb);
+    }
+    100% {
+        box-shadow: 0 0 10px var(--domain-color, rgba(37, 99, 235, 0.5)),
+                    0 0 20px var(--domain-color, rgba(37, 99, 235, 0.2)),
+                    inset 0 0 4px rgba(255, 255, 255, 0.15);
+        border-color: var(--domain-color, #2563eb);
+    }
+}
+
+/* 确保域名着色tab的选中样式不与.selected冲突 */
+.tab-item.domain-colored.selected {
+    background: var(--domain-color) !important;
+    outline: 2px solid var(--domain-color, #2563eb);
+    outline-offset: 1px;
+}
+
 /* 暗色模式 */
 .modal-container[data-theme="dark"] .tab-item.active {
     background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);

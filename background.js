@@ -150,6 +150,7 @@ const messageHandlers = {
     checkAISettings: async () => handleCheckAISettingsRequest(),
     downloadAIModel: async () => handleDownloadAIModelRequest(),
     mergeWindows: async (req) => handleMergeWindowsRequest(req.sourceWindowId, req.targetWindowId),
+    moveTabToWindow: async (req) => handleMoveTabToWindowRequest(req.tabId, req.sourceWindowId, req.targetWindowId),
     getAllBookmarks: async () => handleGetAllBookmarksRequest(),
     deleteBookmark: async (req) => handleDeleteBookmarkRequest(req.bookmarkId),
     createTab: async (req) => handleCreateTabRequest(req.url),
@@ -1449,6 +1450,28 @@ async function handleMergeWindowsRequest(sourceWindowId, targetWindowId) {
             error: errorMessage,
             errorDetails: error.message
         };
+    }
+}
+
+// 处理单个标签页移动到其他窗口请求
+async function handleMoveTabToWindowRequest(tabId, sourceWindowId, targetWindowId) {
+    try {
+        if (sourceWindowId === targetWindowId) {
+            return { success: true, message: '标签页已在目标窗口中' };
+        }
+
+        await chrome.tabs.move(tabId, { windowId: targetWindowId, index: -1 });
+
+        return { success: true, message: '标签页移动成功' };
+    } catch (error) {
+        Logger.error('移动标签页失败:', error.message);
+        let errorMessage = '移动标签页失败';
+        if (error.message.includes('No window with id')) {
+            errorMessage = '目标窗口不存在或已被关闭';
+        } else if (error.message.includes('Cannot move tabs')) {
+            errorMessage = '无法移动标签页，可能权限不足';
+        }
+        return { success: false, error: errorMessage, errorDetails: error.message };
     }
 }
 
