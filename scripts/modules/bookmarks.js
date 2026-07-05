@@ -181,8 +181,18 @@ SearchModal.prototype.bindFolderStatusEvents = function() {
     // 绑定书签事件
 
 SearchModal.prototype.bindBookmarkEvents = function() {
-    // 绑定书签点击事件
+    // 绑定书签点击事件和鼠标悬停事件
     this.modal.querySelectorAll('.bookmark-item').forEach((item, index) => {
+        // 鼠标悬停时自动选中
+        item.addEventListener('mouseenter', (e) => {
+            // 清除所有选中状态
+            this.modal.querySelectorAll('.bookmark-item.selected, .result-item.selected').forEach(el => el.classList.remove('selected'));
+            // 添加当前选中状态
+            item.classList.add('selected');
+            // 更新 selectedIndex
+            this.selectedIndex = index;
+        });
+
         // 绑定整个书签项的点击事件，但排除分组标签和删除按钮
         item.addEventListener('click', (e) => {
             // 如果点击的是分组标签或删除按钮，不处理

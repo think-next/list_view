@@ -483,8 +483,18 @@ SearchModal.prototype.displayResults = function(results, query = '') {
         }
     }
 
-    // 添加点击事件
+    // 添加点击事件和鼠标悬停事件
     this.modal.querySelectorAll('.result-item').forEach((item, index) => {
+        // 鼠标悬停时自动选中
+        item.addEventListener('mouseenter', (e) => {
+            // 清除所有选中状态
+            this.modal.querySelectorAll('.result-item.selected, .bookmark-item.selected').forEach(el => el.classList.remove('selected'));
+            // 添加当前选中状态
+            item.classList.add('selected');
+            // 更新 selectedIndex
+            this.selectedIndex = index;
+        });
+
         item.addEventListener('click', (e) => {
             // 如果点击的是功能按钮，不处理主点击事件
             if (e.target.classList.contains('close-tab-btn') ||

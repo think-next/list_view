@@ -1,5 +1,7 @@
 // 全局变量
 let searchModal = null;
+let modalDebounceTimer = null;
+const MODAL_DEBOUNCE_MS = 300;
 
 // 监听来自background script的消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -8,8 +10,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ success: true, message: 'Content script已就绪' });
         return true;
     } else if (request.action === 'showModal') {
+        // 检查是否有正在进行的防抖操作
+        if (modalDebounceTimer) {
+            Logger.info('检测到连续的模态框请求，应用防抖机制');
+        }
         showModal(request.windowId);
-        sendResponse({ success: true, message: '模态框显示成功' });
+        sendResponse({ success: true, message: '模态框显示请求已处理' });
         return true;
     } else if (request.action === 'hideModal') {
         hideModal();
@@ -25,6 +31,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // 显示模态框
 async function showModal(windowId) {
     try {
+        // 清除之前的防抖定时器
+        if (modalDebounceTimer) {
+            clearTimeout(modalDebounceTimer);
+            Logger.info('清除之前的模态框请求（防抖）');
+        }
+
+        // 防抖延迟：等待300ms，确保没有连续触发
+        await new Promise((resolve) => {
+            modalDebounceTimer = setTimeout(resolve, MODAL_DEBOUNCE_MS);
+        });
+
         // 检查页面是否支持模态框
         if (!isPageCompatible()) {
             Logger.warn('当前页面不支持模态框');
@@ -50,6 +67,7 @@ async function showModal(windowId) {
 
         // 显示模态框
         searchModal.show();
+        Logger.info('模态框显示成功，窗口ID:', windowId);
 
     } catch (error) {
         Logger.error('显示模态框失败:', error);
@@ -83,8 +101,15 @@ function isPageCompatible() {
 
 // 隐藏模态框
 function hideModal() {
+    // 清理防抖定时器
+    if (modalDebounceTimer) {
+        clearTimeout(modalDebounceTimer);
+        modalDebounceTimer = null;
+    }
+
     if (searchModal && searchModal.isOpen) {
         searchModal.close();
+        Logger.info('模态框已关闭');
     }
 }
 

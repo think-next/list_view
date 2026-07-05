@@ -741,6 +741,7 @@
 .tab-item.domain-colored.selected,
 .tab-item.domain-colored.result-item.selected {
     animation: domainBorderGlow 1.5s ease-in-out infinite alternate;
+    z-index: 10;
 }
 
 @keyframes domainBorderGlow {
@@ -762,6 +763,61 @@
     background: var(--domain-color) !important;
     outline: 2px solid var(--domain-color, #2563eb);
     outline-offset: 1px;
+}
+
+/* Tab 选中状态样式 - 确保足够明显 */
+.tab-item.selected {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+    color: white !important;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4), 0 0 0 3px rgba(37, 99, 235, 0.2);
+    z-index: 10;
+    position: relative;
+}
+
+.tab-item.selected .result-title {
+    color: white !important;
+    font-weight: 600;
+}
+
+.tab-item.selected .result-url {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.tab-item.selected .tab-favicon {
+    filter: brightness(1.2);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.tab-item.selected .batch-checkbox {
+    color: white;
+}
+
+.tab-item.selected .pinned-indicator {
+    filter: brightness(1.5);
+}
+
+.tab-item.selected .duplicate-badge {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+/* 暗色模式下的 tab 选中状态 */
+.modal-container[data-theme="dark"] .tab-item.selected {
+    background: #3b82f6 !important;
+    border-color: #60a5fa !important;
+    color: white !important;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5), 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+.modal-container[data-theme="dark"] .tab-item.selected .result-title {
+    color: white !important;
+}
+
+.modal-container[data-theme="dark"] .tab-item.selected .result-url {
+    color: rgba(255, 255, 255, 0.85) !important;
 }
 
 /* 暗色模式 */

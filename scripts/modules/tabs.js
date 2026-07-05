@@ -771,8 +771,20 @@ SearchModal.prototype.bindTabEvents = function() {
         });
     });
 
-    // 添加点击事件
-    this.modal.querySelectorAll('.tab-item').forEach(item => {
+    // 添加点击事件和鼠标悬停事件
+    const allTabItems = this.modal.querySelectorAll('.tab-item');
+    allTabItems.forEach((item, index) => {
+        // 鼠标悬停时自动选中
+        item.addEventListener('mouseenter', (e) => {
+            // 清除所有选中状态
+            this.modal.querySelectorAll('.tab-item.selected').forEach(el => el.classList.remove('selected'));
+            // 添加当前选中状态
+            item.classList.add('selected');
+            // 更新 selectedIndex - 获取当前可见窗口内的所有 tab 项，计算正确的索引
+            const visibleTabItems = this.modal.querySelectorAll('.window-group:not(.window-hidden) .tab-item');
+            this.selectedIndex = Array.from(visibleTabItems).indexOf(item);
+        });
+
         item.addEventListener('click', (e) => {
             // 如果点击的是关闭按钮，不切换标签页
             if (e.target.classList.contains('close-tab-btn')) {
