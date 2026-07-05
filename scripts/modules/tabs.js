@@ -34,13 +34,29 @@ SearchModal.prototype.updateBatchSelectionUI = function() {
         const tabId = parseInt(item.dataset.tabId);
         const cb = item.querySelector('.batch-checkbox');
         if (this.selectedTabIds.has(tabId)) {
-            item.style.outline = '2px solid #2563eb';
+            // 选中状态：添加蓝色边框和微妙阴影
+            item.style.outline = '2px solid #3b82f6';
             item.style.outlineOffset = '-1px';
-            if (cb) cb.textContent = '☑';
+            item.style.boxShadow = '0 2px 8px rgba(59, 130, 246, 0.2)';
+            if (cb) {
+                cb.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="1" width="14" height="14" rx="3" fill="#3b82f6" stroke="#3b82f6" stroke-width="1"/>
+                    <path d="M4 8L6.5 10.5L12 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>`;
+                // 添加选中动画
+                cb.style.transform = 'scale(1.1)';
+                setTimeout(() => cb.style.transform = 'scale(1)', 150);
+            }
         } else {
             item.style.outline = '';
             item.style.outlineOffset = '';
-            if (cb) cb.textContent = '☐';
+            item.style.boxShadow = '';
+            if (cb) {
+                cb.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="1" width="14" height="14" rx="3" fill="white" stroke="#cbd5e1" stroke-width="1.5"/>
+                </svg>`;
+                cb.style.transform = '';
+            }
         }
     });
     // Show/hide batch action bar
@@ -49,38 +65,114 @@ SearchModal.prototype.updateBatchSelectionUI = function() {
         if (!bar) {
             bar = document.createElement('div');
             bar.id = 'batchActionBar';
-            bar.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:12px;padding:10px 20px;background:#2563eb;color:white;font-size:13px;font-weight:500;position:sticky;bottom:0;z-index:10;border-radius:0 0 16px 16px;';
-            bar.innerHTML = `<span id="batchCount">0 selected</span><button id="batchCloseBtn" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;">Close Selected</button><button id="batchMoveBtn" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;">Move to New Window</button><button id="batchCancelBtn" style="background:rgba(255,255,255,0.1);border:none;color:white;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;">Cancel</button>`;
+            bar.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 20px;background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);color:white;font-size:13px;font-weight:500;position:sticky;bottom:0;z-index:10;border-radius:0 0 16px 16px;box-shadow:0 -4px 12px rgba(37,99,235,0.15);transition:all 0.2s ease;';
+            bar.innerHTML = `<span id="batchCount" style="font-weight:600;min-width:80px;text-align:center;">0 selected</span><button id="batchCloseBtn" style="background:rgba(255,255,255,0.15);border:none;color:white;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;transition:all 0.15s ease;min-width:100px;">Close Selected</button><button id="batchMoveBtn" style="background:rgba(255,255,255,0.15);border:none;color:white;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;transition:all 0.15s ease;min-width:100px;">Move to New Window</button><button id="batchCancelBtn" style="background:rgba(255,255,255,0.08);border:none;color:white;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;transition:all 0.15s ease;">Cancel</button>`;
             const modalBody = this.modal.querySelector('.modal-body');
             modalBody.appendChild(bar);
+
+            // 添加按钮悬停效果
+            const addHoverEffect = (btn) => {
+                btn.addEventListener('mouseenter', () => {
+                    btn.style.background = 'rgba(255,255,255,0.25)';
+                    btn.style.transform = 'translateY(-1px)';
+                });
+                btn.addEventListener('mouseleave', () => {
+                    btn.style.background = 'rgba(255,255,255,0.15)';
+                    btn.style.transform = 'translateY(0)';
+                });
+                btn.addEventListener('mousedown', () => {
+                    btn.style.transform = 'translateY(0) scale(0.98)';
+                });
+                btn.addEventListener('mouseup', () => {
+                    btn.style.transform = 'translateY(-1px) scale(1)';
+                });
+            };
+
             bar.querySelector('#batchCloseBtn').addEventListener('click', () => this.batchCloseSelected());
             bar.querySelector('#batchMoveBtn').addEventListener('click', () => this.batchMoveToNewWindow());
             bar.querySelector('#batchCancelBtn').addEventListener('click', () => { this.selectedTabIds.clear(); this.lastClickedTabId = null; this.updateBatchSelectionUI(); });
+
+            // 为所有按钮添加悬停效果
+            bar.querySelectorAll('button').forEach(addHoverEffect);
         }
         bar.style.display = 'flex';
         bar.querySelector('#batchCount').textContent = `${this.selectedTabIds.size} selected`;
+        // 添加进入动画
+        bar.style.animation = 'slideUp 0.2s ease-out';
     } else if (bar) {
         bar.style.display = 'none';
     }
 };
 
-SearchModal.prototype.batchCloseSelected = function() {
+SearchModal.prototype.batchCloseSelected = async function() {
     const ids = [...this.selectedTabIds];
     this.selectedTabIds.clear();
     this.lastClickedTabId = null;
     this.updateBatchSelectionUI();
-    ids.forEach(tabId => chrome.tabs.remove(tabId, () => { if (!chrome.runtime.lastError) this.removeTabFromResults(tabId, 0); }));
+
+    // 使用Promise等待所有tabs关闭完成
+    const closePromises = ids.map(tabId => {
+        return new Promise((resolve) => {
+            chrome.tabs.remove(tabId, () => {
+                if (!chrome.runtime.lastError) {
+                    this.removeTabFromResults(tabId, 0);
+                }
+                resolve();
+            });
+        });
+    });
+
+    await Promise.all(closePromises);
+
+    // 刷新显示以确保UI同步
+    this.refreshResultsDisplay();
 };
 
-SearchModal.prototype.batchMoveToNewWindow = function() {
+SearchModal.prototype.batchMoveToNewWindow = async function() {
+    if (this.selectedTabIds.size === 0) return;
+
     const ids = [...this.selectedTabIds];
     this.selectedTabIds.clear();
     this.lastClickedTabId = null;
     this.updateBatchSelectionUI();
-    chrome.windows.create({ tabId: ids[0] }, (win) => {
-        if (ids.length > 1) chrome.tabs.move(ids.slice(1), { windowId: win.id, index: -1 });
+
+    try {
+        // 创建新窗口并移动第一个tab
+        const win = await new Promise((resolve, reject) => {
+            chrome.windows.create({ tabId: ids[0] }, (createdWindow) => {
+                if (chrome.runtime.lastError) {
+                    reject(new Error(chrome.runtime.lastError.message));
+                } else {
+                    resolve(createdWindow);
+                }
+            });
+        });
+
+        // 移动剩余tabs到新窗口
+        if (ids.length > 1) {
+            await new Promise((resolve, reject) => {
+                chrome.tabs.move(ids.slice(1), { windowId: win.id, index: -1 }, () => {
+                    if (chrome.runtime.lastError) {
+                        reject(new Error(chrome.runtime.lastError.message));
+                    } else {
+                        resolve();
+                    }
+                });
+            });
+        }
+
+        // 重新加载所有tabs
         this.loadAllTabs();
-    });
+    } catch (error) {
+        Logger.error('批量移动到新窗口失败:', error);
+        // 显示错误信息
+        const searchInput = this.modal.querySelector('#searchInput');
+        if (searchInput) {
+            const origPlaceholder = searchInput.placeholder;
+            searchInput.placeholder = '❌ Move failed';
+            setTimeout(() => { searchInput.placeholder = origPlaceholder; }, 2000);
+        }
+    }
 };
 
 SearchModal.prototype.getDomainColor = function(domain) {

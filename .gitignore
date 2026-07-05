@@ -1,2 +1,11 @@
 *.zip
 !releases/*.zip
+
+# Node modules and test coverage
+node_modules/
+coverage/
+*.lcov
+
+# Test lock files
+package-lock.json
+yarn.lock
