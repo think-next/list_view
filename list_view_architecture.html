@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List View Chrome Extension - 架构流程图</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .pulsing-dot {
+            width: 8px;
+            height: 8px;
+            background: #22d3ee;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .header p {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .diagram-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .info-card {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .info-card h3 {
+            font-size: 11px;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .info-card ul {
+            list-style: none;
+        }
+
+        .info-card li {
+            font-size: 10px;
+            color: #94a3b8;
+            margin-bottom: 6px;
+            padding-left: 12px;
+            position: relative;
+        }
+
+        .info-card li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #64748b;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #1e293b;
+            font-size: 10px;
+            color: #64748b;
+        }
+
+        /* Toolbar styles */
+        .toolbar {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toolbar-toggle {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid #475569;
+            color: #e2e8f0;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .toolbar-toggle:hover {
+            background: rgba(51, 65, 85, 0.9);
+            border-color: #64748b;
+        }
+
+        .toolbar-actions {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 6px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 140px;
+        }
+
+        .toolbar-actions.show {
+            display: flex;
+        }
+
+        .toolbar-btn {
+            background: rgba(51, 65, 85, 0.8);
+            border: 1px solid #475569;
+            color: #e2e8f0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .toolbar-btn:hover {
+            background: rgba(71, 85, 105, 0.8);
+            border-color: #64748b;
+        }
+
+        @media print {
+            .toolbar {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <button class="toolbar-toggle" onclick="toggleToolbar()">⋯</button>
+        <div class="toolbar-actions" id="toolbarActions">
+            <button class="toolbar-btn" onclick="copyAsImage()">📋 复制图片</button>
+            <button class="toolbar-btn" onclick="downloadPNG()">🖼️ 导出 PNG</button>
+            <button class="toolbar-btn" onclick="downloadPDF()">📄 导出 PDF</button>
+        </div>
+    </div>
+
+    <div class="container" id="report-container">
+        <div class="header">
+            <h1>
+                <div class="pulsing-dot"></div>
+                List View Chrome Extension - 架构流程图
+            </h1>
+            <p>Chrome 扩展程序 • 书签与历史记录搜索 • AI 智能推荐</p>
+        </div>
+
+        <!-- 用户交互层 -->
+        <div class="diagram-card">
+            <div class="section-title">🎯 用户交互层</div>
+            <svg viewBox="0 0 1200 180" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="grid1" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+                    </pattern>
+                    <marker id="arrowhead1" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+                    </marker>
+                </defs>
+                <rect width="1200" height="180" fill="url(#grid1)"/>
+
+                <!-- 用户操作 -->
+                <rect x="50" y="60" width="140" height="60" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+                <text x="120" y="80" fill="white" font-size="11" font-weight="600" text-anchor="middle">用户操作</text>
+                <text x="120" y="96" fill="#94a3b8" font-size="9" text-anchor="middle">点击扩展图标</text>
+                <text x="120" y="110" fill="#94a3b8" font-size="9" text-anchor="middle">快捷键 Ctrl+Shift+L</text>
+
+                <!-- Browser Action -->
+                <rect x="280" y="60" width="160" height="60" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+                <text x="360" y="80" fill="white" font-size="11" font-weight="600" text-anchor="middle">Chrome Events</text>
+                <text x="360" y="96" fill="#94a3b8" font-size="9" text-anchor="middle">chrome.action.onClicked</text>
+                <text x="360" y="110" fill="#94a3b8" font-size="9" text-anchor="middle">chrome.commands.onCommand</text>
+
+                <!-- Background Script -->
+                <rect x="510" y="60" width="160" height="60" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+                <text x="590" y="80" fill="white" font-size="11" font-weight="600" text-anchor="middle">Background Script</text>
+                <text x="590" y="96" fill="#94a3b8" font-size="9" text-anchor="middle">Service Worker</text>
+                <text x="590" y="110" fill="#94a3b8" font-size="9" text-anchor="middle">background.js</text>
+
+                <!-- Content Script Injection -->
+                <rect x="740" y="60" width="160" height="60" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+                <text x="820" y="80" fill="white" font-size="11" font-weight="600" text-anchor="middle">Content Scripts</text>
+                <text x="820" y="96" fill="#94a3b8" font-size="9" text-anchor="middle">注入到当前页面</text>
+                <text x="820" y="110" fill="#94a3b8" font-size="9" text-anchor="middle">scripts/content.js</text>
+
+                <!-- UI Modal -->
+                <rect x="970" y="60" width="160" height="60" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+                <text x="1050" y="80" fill="white" font-size="11" font-weight="600" text-anchor="middle">UI Modal</text>
+                <text x="1050" y="96" fill="#94a3b8" font-size="9" text-anchor="middle">搜索模态框</text>
+                <text x="1050" y="110" fill="#94a3b8" font-size="9" text-anchor="middle">SearchModal</text>
+
+                <!-- Arrows -->
+                <line x1="190" y1="90" x2="280" y2="90" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead1)"/>
+                <line x1="440" y1="90" x2="510" y2="90" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead1)"/>
+                <line x1="670" y1="90" x2="740" y2="90" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead1)"/>
+                <line x1="900" y1="90" x2="970" y2="90" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead1)"/>
+            </svg>
+        </div>
+
+        <!-- 核心服务层 -->
+        <div class="diagram-card">
+            <div class="section-title">⚙️ 核心服务层</div>
+            <svg viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="grid2" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+                    </pattern>
+                    <marker id="arrowhead2" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+                    </marker>
+                </defs>
+                <rect width="1200" height="400" fill="url(#grid2)"/>
+
+                <!-- Message Router -->
+                <rect x="420" y="30" width="360" height="50" rx="6" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
+                <text x="600" y="52" fill="white" font-size="11" font-weight="600" text-anchor="middle">Message Router</text>
+                <text x="600" y="68" fill="#94a3b8" font-size="9" text-anchor="middle">chrome.runtime.onMessage • 消息路由表</text>
+
+                <!-- Search Service -->
+                <rect x="50" y="120" width="160" height="80" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+                <text x="130" y="140" fill="white" font-size="11" font-weight="600" text-anchor="middle">Search Service</text>
+                <text x="130" y="156" fill="#94a3b8" font-size="9" text-anchor="middle">searchBookmarks()</text>
+                <text x="130" y="170" fill="#94a3b8" font-size="9" text-anchor="middle">searchHistory()</text>
+                <text x="130" y="184" fill="#94a3b8" font-size="9" text-anchor="middle">searchTabs()</text>
+
+                <!-- Tab Manager -->
+                <rect x="250" y="120" width="160" height="80" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+                <text x="330" y="140" fill="white" font-size="11" font-weight="600" text-anchor="middle">Tab Manager</text>
+                <text x="330" y="156" fill="#94a3b8" font-size="9" text-anchor="middle">switchToTab()</text>
+                <text x="330" y="170" fill="#94a3b8" font-size="9" text-anchor="middle">closeTab()</text>
+                <text x="330" y="184" fill="#94a3b8" font-size="9" text-anchor="middle">reorderTabs()</text>
+
+                <!-- Bookmark Manager -->
+                <rect x="450" y="120" width="160" height="80" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+                <text x="530" y="140" fill="white" font-size="11" font-weight="600" text-anchor="middle">Bookmark Manager</text>
+                <text x="530" y="156" fill="#94a3b8" font-size="9" text-anchor="middle">getAllBookmarks()</text>
+                <text x="530" y="170" fill="#94a3b8" font-size="9" text-anchor="middle">deleteBookmark()</text>
+                <text x="530" y="184" fill="#94a3b8" font-size="9" text-anchor="middle">flattenBookmarks()</text>
+
+                <!-- AI Recommendation -->
+                <rect x="650" y="120" width="160" height="80" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+                <text x="730" y="140" fill="white" font-size="11" font-weight="600" text-anchor="middle">AI Recommendation</text>
+                <text x="730" y="156" fill="#94a3b8" font-size="9" text-anchor="middle">LanguageModel API</text>
+                <text x="730" y="170" fill="#94a3b8" font-size="9" text-anchor="middle">智能推荐算法</text>
+                <text x="730" y="184" fill="#94a3b8" font-size="9" text-anchor="middle">模型下载管理</text>
+
+                <!-- Window Manager -->
+                <rect x="850" y="120" width="160" height="80" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+                <text x="930" y="140" fill="white" font-size="11" font-weight="600" text-anchor="middle">Window Manager</text>
+                <text x="930" y="156" fill="#94a3b8" font-size="9" text-anchor="middle">mergeWindows()</text>
+                <text x="930" y="170" fill="#94a3b8" font-size="9" text-anchor="middle">saveWindowName()</text>
+                <text x="930" y="184" fill="#94a3b8" font-size="9" text-anchor="middle">groupTabsByWindow()</text>
+
+                <!-- Data Processing -->
+                <rect x="250" y="260" width="360" height="60" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+                <text x="430" y="280" fill="white" font-size="11" font-weight="600" text-anchor="middle">Data Processing</text>
+                <text x="430" y="296" fill="#94a3b8" font-size="9" text-anchor="middle">去重 • 排序 • 分组 • 过滤</text>
+                <text x="430" y="310" fill="#94a3b8" font-size="8" text-anchor="middle">dedupeAndCapByBaseUrl() • mergeSourcesByPriority()</text>
+
+                <!-- Storage Service -->
+                <rect x="680" y="260" width="200" height="60" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+                <text x="780" y="280" fill="white" font-size="11" font-weight="600" text-anchor="middle">Storage Service</text>
+                <text x="780" y="296" fill="#94a3b8" font-size="9" text-anchor="middle">chrome.storage.local</text>
+                <text x="780" y="310" fill="#94a3b8" font-size="8" text-anchor="middle">配置 • 窗口名称 • AI设置</text>
+
+                <!-- Arrows -->
+                <line x1="600" y1="80" x2="130" y2="120" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead2)"/>
+                <line x1="600" y1="80" x2="330" y2="120" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead2)"/>
+                <line x1="600" y1="80" x2="530" y2="120" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead2)"/>
+                <line x1="600" y1="80" x2="730" y2="120" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead2)"/>
+                <line x1="600" y1="80" x2="930" y2="120" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead2)"/>
+
+                <line x1="130" y1="200" x2="300" y2="260" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead2)"/>
+                <line x1="330" y1="200" x2="350" y2="260" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead2)"/>
+                <line x1="530" y1="200" x2="450" y2="260" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead2)"/>
+                <line x1="730" y1="200" x2="500" y2="260" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead2)"/>
+                <line x1="930" y1="200" x2="560" y2="260" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead2)"/>
+
+                <line x1="430" y1="320" x2="600" y2="320" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead2)"/>
+            </svg>
+        </div>
+
+        <!-- Chrome API 层 -->
+        <div class="diagram-card">
+            <div class="section-title">🔌 Chrome API 层</div>
+            <svg viewBox="0 0 1200 200" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="grid3" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+                    </pattern>
+                </defs>
+                <rect width="1200" height="200" fill="url(#grid3)"/>
+
+                <!-- Chrome APIs -->
+                <rect x="50" y="50" width="130" height="100" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+                <text x="115" y="75" fill="white" font-size="11" font-weight="600" text-anchor="middle">Bookmarks API</text>
+                <text x="115" y="91" fill="#94a3b8" font-size="8" text-anchor="middle">chrome.bookmarks</text>
+                <text x="115" y="105" fill="#94a3b8" font-size="8" text-anchor="middle">getTree()</text>
+                <text x="115" y="119" fill="#94a3b8" font-size="8" text-anchor="middle">search()</text>
+                <text x="115" y="133" fill="#94a3b8" font-size="8" text-anchor="middle">remove()</text>
+
+                <rect x="200" y="50" width="130" height="100" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+                <text x="265" y="75" fill="white" font-size="11" font-weight="600" text-anchor="middle">History API</text>
+                <text x="265" y="91" fill="#94a3b8" font-size="8" text-anchor="middle">chrome.history</text>
+                <text x="265" y="105" fill="#94a3b8" font-size="8" text-anchor="middle">search()</text>
+                <text x="265" y="119" fill="#94a3b8" font-size="8" text-anchor="middle">getVisits()</text>
+
+                <rect x="350" y="50" width="130" height="100" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+                <text x="415" y="75" fill="white" font-size="11" font-weight="600" text-anchor="middle">Tabs API</text>
+                <text x="415" y="91" fill="#94a3b8" font-size="8" text-anchor="middle">chrome.tabs</text>
+                <text x="415" y="105" fill="#94a3b8" font-size="8" text-anchor="middle">query()</text>
+                <text x="415" y="119" fill="#94a3b8" font-size="8" text-anchor="middle">update()</text>
+                <text x="415" y="133" fill="#94a3b8" font-size="8" text-anchor="middle">move()</text>
+
+                <rect x="500" y="50" width="130" height="100" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+                <text x="565" y="75" fill="white" font-size="11" font-weight="600" text-anchor="middle">Windows API</text>
+                <text x="565" y="91" fill="#94a3b8" font-size="8" text-anchor="middle">chrome.windows</text>
+                <text x="565" y="105" fill="#94a3b8" font-size="8" text-anchor="middle">getAll()</text>
+                <text x="565" y="119" fill="#94a3b8" font-size="8" text-anchor="middle">update()</text>
+
+                <rect x="650" y="50" width="130" height="100" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+                <text x="715" y="75" fill="white" font-size="11" font-weight="600" text-anchor="middle">Sessions API</text>
+                <text x="715" y="91" fill="#94a3b8" font-size="8" text-anchor="middle">chrome.sessions</text>
+                <text x="715" y="105" fill="#94a3b8" font-size="8" text-anchor="middle">getRecentlyClosed()</text>
+
+                <rect x="800" y="50" width="130" height="100" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+                <text x="865" y="75" fill="white" font-size="11" font-weight="600" text-anchor="middle">Storage API</text>
+                <text x="865" y="91" fill="#94a3b8" font-size="8" text-anchor="middle">chrome.storage.local</text>
+                <text x="865" y="105" fill="#94a3b8" font-size="8" text-anchor="middle">get()</text>
+                <text x="865" y="119" fill="#94a3b8" font-size="8" text-anchor="middle">set()</text>
+
+                <rect x="950" y="50" width="130" height="100" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+                <text x="1015" y="75" fill="white" font-size="11" font-weight="600" text-anchor="middle">AI API</text>
+                <text x="1015" y="91" fill="#94a3b8" font-size="8" text-anchor="middle">LanguageModel</text>
+                <text x="1015" y="105" fill="#94a3b8" font-size="8" text-anchor="middle">create()</text>
+                <text x="1015" y="119" fill="#94a3b8" font-size="8" text-anchor="middle">availability()</text>
+                <text x="1015" y="133" fill="#94a3b8" font-size="8" text-anchor="middle">prompt()</text>
+            </svg>
+        </div>
+
+        <!-- 数据流向 -->
+        <div class="diagram-card">
+            <div class="section-title">📊 数据流向</div>
+            <svg viewBox="0 0 1200 300" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="grid4" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+                    </pattern>
+                    <marker id="arrowhead4" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+                    </marker>
+                </defs>
+                <rect width="1200" height="300" fill="url(#grid4)"/>
+
+                <!-- Step 1: User Input -->
+                <rect x="50" y="100" width="120" height="60" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+                <text x="110" y="120" fill="white" font-size="11" font-weight="600" text-anchor="middle">1. 用户输入</text>
+                <text x="110" y="136" fill="#94a3b8" font-size="9" text-anchor="middle">搜索关键词</text>
+                <text x="110" y="150" fill="#94a3b8" font-size="9" text-anchor="middle">过滤条件</text>
+
+                <!-- Step 2: Message to Background -->
+                <rect x="220" y="100" width="140" height="60" rx="6" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
+                <text x="290" y="120" fill="white" font-size="11" font-weight="600" text-anchor="middle">2. 消息传递</text>
+                <text x="290" y="136" fill="#94a3b8" font-size="9" text-anchor="middle">chrome.runtime</text>
+                <text x="290" y="150" fill="#94a3b8" font-size="9" text-anchor="middle">sendMessage</text>
+
+                <!-- Step 3: Parallel Search -->
+                <rect x="410" y="80" width="140" height="100" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+                <text x="480" y="100" fill="white" font-size="11" font-weight="600" text-anchor="middle">3. 并行搜索</text>
+                <text x="480" y="116" fill="#94a3b8" font-size="9" text-anchor="middle">Promise.all</text>
+                <text x="480" y="132" fill="#94a3b8" font-size="8" text-anchor="middle">• Bookmarks</text>
+                <text x="480" y="146" fill="#94a3b8" font-size="8" text-anchor="middle">• History</text>
+                <text x="480" y="160" fill="#94a3b8" font-size="8" text-anchor="middle">• Tabs</text>
+
+                <!-- Step 4: Processing -->
+                <rect x="600" y="80" width="140" height="100" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+                <text x="670" y="100" fill="white" font-size="11" font-weight="600" text-anchor="middle">4. 数据处理</text>
+                <text x="670" y="116" fill="#94a3b8" font-size="9" text-anchor="middle">去重排序</text>
+                <text x="670" y="132" fill="#94a3b8" font-size="8" text-anchor="middle">• URL去重</text>
+                <text x="670" y="146" fill="#94a3b8" font-size="8" text-anchor="middle">• 时间排序</text>
+                <text x="670" y="160" fill="#94a3b8" font-size="8" text-anchor="middle">• 结果合并</text>
+
+                <!-- Step 5: AI Enhancement -->
+                <rect x="790" y="80" width="140" height="100" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+                <text x="860" y="100" fill="white" font-size="11" font-weight="600" text-anchor="middle">5. AI 增强</text>
+                <text x="860" y="116" fill="#94a3b8" font-size="9" text-anchor="middle">智能推荐</text>
+                <text x="860" y="132" fill="#94a3b8" font-size="8" text-anchor="middle">• 上下文分析</text>
+                <text x="860" y="146" fill="#94a3b8" font-size="8" text-anchor="middle">• 相关性排序</text>
+                <text x="860" y="160" fill="#94a3b8" font-size="8" text-anchor="middle">• 个性化推荐</text>
+
+                <!-- Step 6: Display Results -->
+                <rect x="980" y="100" width="140" height="60" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+                <text x="1050" y="120" fill="white" font-size="11" font-weight="600" text-anchor="middle">6. 结果展示</text>
+                <text x="1050" y="136" fill="#94a3b8" font-size="9" text-anchor="middle">UI 渲染</text>
+                <text x="1050" y="150" fill="#94a3b8" font-size="9" text-anchor="middle">用户交互</text>
+
+                <!-- Step 7: User Action -->
+                <rect x="50" y="200" width="160" height="60" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+                <text x="130" y="220" fill="white" font-size="11" font-weight="600" text-anchor="middle">7. 用户操作</text>
+                <text x="130" y="236" fill="#94a3b8" font-size="9" text-anchor="middle">选择结果 • 打开链接</text>
+                <text x="130" y="250" fill="#94a3b8" font-size="9" text-anchor="middle">切换标签 • 管理窗口</text>
+
+                <!-- Step 8: Execute Action -->
+                <rect x="250" y="200" width="160" height="60" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+                <text x="330" y="220" fill="white" font-size="11" font-weight="600" text-anchor="middle">8. 执行操作</text>
+                <text x="330" y="236" fill="#94a3b8" font-size="9" text-anchor="middle">调用 Chrome API</text>
+                <text x="330" y="250" fill="#94a3b8" font-size="9" text-anchor="middle">更新浏览器状态</text>
+
+                <!-- Arrows -->
+                <line x1="170" y1="130" x2="220" y2="130" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead4)"/>
+                <line x1="360" y1="130" x2="410" y2="130" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead4)"/>
+                <line x1="550" y1="130" x2="600" y2="130" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead4)"/>
+                <line x1="740" y1="130" x2="790" y2="130" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead4)"/>
+                <line x1="930" y1="130" x2="980" y2="130" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead4)"/>
+                <line x1="1050" y1="160" x2="1050" y2="180" stroke="#64748b" stroke-width="2"/>
+                <line x1="1050" y1="180" x2="130" y2="180" stroke="#64748b" stroke-width="2"/>
+                <line x1="130" y1="180" x2="130" y2="200" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead4)"/>
+                <line x1="210" y1="230" x2="250" y2="230" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead4)"/>
+            </svg>
+        </div>
+
+        <!-- 信息卡片 -->
+        <div class="info-grid">
+            <div class="info-card">
+                <h3>
+                    <div class="dot" style="background: #22d3ee;"></div>
+                    前端组件
+                </h3>
+                <ul>
+                    <li>content.js - 内容脚本主入口</li>
+                    <li>modal.js - 搜索模态框</li>
+                    <li>ui-components.js - UI 组件库</li>
+                    <li>modal-core.js - 模态框核心逻辑</li>
+                    <li>options.js - 设置页面</li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3>
+                    <div class="dot" style="background: #34d399;"></div>
+                    后端服务
+                </h3>
+                <ul>
+                    <li>background.js - Service Worker</li>
+                    <li>search.js - 搜索模块</li>
+                    <li>tabs.js - 标签页管理</li>
+                    <li>bookmarks.js - 书签管理</li>
+                    <li>ai-recommendations.js - AI 推荐</li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3>
+                    <div class="dot" style="background: #fbbf24;"></div>
+                    Chrome API
+                </h3>
+                <ul>
+                    <li>chrome.bookmarks - 书签访问</li>
+                    <li>chrome.history - 历史记录</li>
+                    <li>chrome.tabs - 标签页操作</li>
+                    <li>chrome.windows - 窗口管理</li>
+                    <li>chrome.storage - 本地存储</li>
+                    <li>chrome.sessions - 会话管理</li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3>
+                    <div class="dot" style="background: #fb7185;"></div>
+                    AI 功能
+                </h3>
+                <ul>
+                    <li>LanguageModel API - AI 模型</li>
+                    <li>智能推荐算法</li>
+                    <li>上下文感知搜索</li>
+                    <li>模型下载管理</li>
+                    <li>个性化建议</li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3>
+                    <div class="dot" style="background: #fb923c;"></div>
+                    消息路由
+                </h3>
+                <ul>
+                    <li>chrome.runtime.onMessage</li>
+                    <li>消息处理器映射表</li>
+                    <li>双向通信机制</li>
+                    <li>错误处理与重试</li>
+                    <li>防抖机制</li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3>
+                    <div class="dot" style="background: #a78bfa;"></div>
+                    数据处理
+                </h3>
+                <ul>
+                    <li>URL 去重 (BaseUrl)</li>
+                    <li>多源数据合并</li>
+                    <li>时间排序算法</li>
+                    <li>窗口分组逻辑</li>
+                    <li>结果限流策略</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>List View Chrome Extension Architecture • Version 1.2.3 • Generated 2026-05-17</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
+            integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"
+            integrity="sha384-en/ztfPSRkGfME4KIm05joYXynqUgbsG5nMrj/xEFAHXkeZfO3yMK8QQ+mP7p1/"
+            crossorigin="anonymous"></script>
+    <script>
+        function toggleToolbar() {
+            const actions = document.getElementById('toolbarActions');
+            actions.classList.toggle('show');
+        }
+
+        async function copyAsImage() {
+            try {
+                const canvas = await captureDiagram();
+                canvas.toBlob(async (blob) => {
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ 'image/png': blob })
+                    ]);
+                    alert('图片已复制到剪贴板！');
+                });
+            } catch (err) {
+                console.error('复制失败:', err);
+                alert('复制失败，请重试');
+            }
+        }
+
+        async function downloadPNG() {
+            try {
+                const canvas = await captureDiagram();
+                const link = document.createElement('a');
+                link.download = 'list-view-architecture.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch (err) {
+                console.error('下载失败:', err);
+                alert('下载失败，请重试');
+            }
+        }
+
+        async function downloadPDF() {
+            try {
+                const canvas = await captureDiagram();
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'px',
+                    format: [canvas.width + 64, canvas.height + 64]
+                });
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 32, 32);
+                pdf.save('list-view-architecture.pdf');
+            } catch (err) {
+                console.error('PDF 导出失败:', err);
+                alert('PDF 导出失败，请重试');
+            }
+        }
+
+        async function captureDiagram() {
+            const container = document.getElementById('report-container');
+            const rect = container.getBoundingClientRect();
+            return await html2canvas(document.body, {
+                x: rect.left - 32,
+                y: rect.top - 32,
+                width: rect.width + 64,
+                height: rect.height + 64,
+                scale: 2,
+                ignoreElements: (element) => {
+                    return element.classList.contains('toolbar');
+                }
+            });
+        }
+
+        // 点击外部关闭工具栏
+        document.addEventListener('click', (e) => {
+            const toolbar = document.querySelector('.toolbar');
+            const actions = document.getElementById('toolbarActions');
+            if (!toolbar.contains(e.target) && actions.classList.contains('show')) {
+                actions.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>

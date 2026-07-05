@@ -110,15 +110,21 @@ SearchModal.prototype.batchCloseSelected = async function() {
     this.lastClickedTabId = null;
     this.updateBatchSelectionUI();
 
-    // 使用Promise等待所有tabs关闭完成
+    // 使用Promise等待所有tabs关闭完成（通过background script）
     const closePromises = ids.map(tabId => {
-        return new Promise((resolve) => {
-            chrome.tabs.remove(tabId, () => {
-                if (!chrome.runtime.lastError) {
+        return new Promise(async (resolve) => {
+            try {
+                const response = await this.sendMessageToBackground({
+                    action: 'closeTab',
+                    tabId: tabId
+                });
+                if (response && response.success) {
                     this.removeTabFromResults(tabId, 0);
                 }
-                resolve();
-            });
+            } catch (error) {
+                Logger.error('批量关闭标签页失败:', error);
+            }
+            resolve();
         });
     });
 
@@ -137,32 +143,18 @@ SearchModal.prototype.batchMoveToNewWindow = async function() {
     this.updateBatchSelectionUI();
 
     try {
-        // 创建新窗口并移动第一个tab
-        const win = await new Promise((resolve, reject) => {
-            chrome.windows.create({ tabId: ids[0] }, (createdWindow) => {
-                if (chrome.runtime.lastError) {
-                    reject(new Error(chrome.runtime.lastError.message));
-                } else {
-                    resolve(createdWindow);
-                }
-            });
+        // 请求background script创建新窗口并移动tabs
+        const response = await this.sendMessageToBackground({
+            action: 'batchMoveToNewWindow',
+            tabIds: ids
         });
 
-        // 移动剩余tabs到新窗口
-        if (ids.length > 1) {
-            await new Promise((resolve, reject) => {
-                chrome.tabs.move(ids.slice(1), { windowId: win.id, index: -1 }, () => {
-                    if (chrome.runtime.lastError) {
-                        reject(new Error(chrome.runtime.lastError.message));
-                    } else {
-                        resolve();
-                    }
-                });
-            });
+        if (response && response.success) {
+            // 重新加载所有tabs
+            this.loadAllTabs();
+        } else {
+            throw new Error(response.error || '移动失败');
         }
-
-        // 重新加载所有tabs
-        this.loadAllTabs();
     } catch (error) {
         Logger.error('批量移动到新窗口失败:', error);
         // 显示错误信息

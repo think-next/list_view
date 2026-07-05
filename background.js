@@ -151,6 +151,7 @@ const messageHandlers = {
     downloadAIModel: async () => handleDownloadAIModelRequest(),
     mergeWindows: async (req) => handleMergeWindowsRequest(req.sourceWindowId, req.targetWindowId),
     moveTabToWindow: async (req) => handleMoveTabToWindowRequest(req.tabId, req.sourceWindowId, req.targetWindowId),
+    batchMoveToNewWindow: async (req) => handleBatchMoveToNewWindowRequest(req.tabIds),
     getAllBookmarks: async () => handleGetAllBookmarksRequest(),
     deleteBookmark: async (req) => handleDeleteBookmarkRequest(req.bookmarkId),
     createTab: async (req) => handleCreateTabRequest(req.url),
@@ -1468,6 +1469,38 @@ async function handleMoveTabToWindowRequest(tabId, sourceWindowId, targetWindowI
         let errorMessage = '移动标签页失败';
         if (error.message.includes('No window with id')) {
             errorMessage = '目标窗口不存在或已被关闭';
+        } else if (error.message.includes('Cannot move tabs')) {
+            errorMessage = '无法移动标签页，可能权限不足';
+        }
+        return { success: false, error: errorMessage, errorDetails: error.message };
+    }
+}
+
+// 处理批量移动标签页到新窗口请求
+async function handleBatchMoveToNewWindowRequest(tabIds) {
+    try {
+        if (!Array.isArray(tabIds) || tabIds.length === 0) {
+            return { success: false, error: 'No tab IDs provided' };
+        }
+
+        // 创建新窗口，使用第一个tab
+        const newWindow = await chrome.windows.create({ tabId: tabIds[0] });
+
+        // 如果有更多tabs，移动到新窗口
+        if (tabIds.length > 1) {
+            await chrome.tabs.move(tabIds.slice(1), { windowId: newWindow.id, index: -1 });
+        }
+
+        return {
+            success: true,
+            message: `成功移动 ${tabIds.length} 个标签页到新窗口`,
+            windowId: newWindow.id
+        };
+    } catch (error) {
+        Logger.error('批量移动标签页失败:', error);
+        let errorMessage = '批量移动标签页失败';
+        if (error.message.includes('No tab with id')) {
+            errorMessage = '标签页不存在或已被关闭';
         } else if (error.message.includes('Cannot move tabs')) {
             errorMessage = '无法移动标签页，可能权限不足';
         }
